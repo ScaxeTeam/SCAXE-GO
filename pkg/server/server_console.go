@@ -96,6 +96,7 @@ func (s *Server) registerConsoleCommands() {
 	s.CommandMap.Register(defaults.NewExtractPharCommand())
 	s.CommandMap.Register(defaults.NewGeneratePluginCommand())
 	s.CommandMap.Register(defaults.NewLvdatCommand())
+	s.CommandMap.Register(defaults.NewLuaPluginCommand())
 
 	s.CommandMap.RegisterAlias("gm", "gamemode")
 	s.CommandMap.RegisterAlias("tp", "teleport")

@@ -1,0 +1,5 @@
+name: Example
+version: "1.0.0"
+author: ScaxeTeam
+description: "Example Lua plugin - broadcasts join/quit messages and adds /online command"
+main: main.lua

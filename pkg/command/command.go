@@ -56,6 +56,10 @@ func (m *CommandMap) Register(cmd Command) {
 	m.commands[cmd.GetName()] = cmd
 }
 
+func (m *CommandMap) Unregister(name string) {
+	delete(m.commands, name)
+}
+
 func (m *CommandMap) RegisterAlias(alias string, targetName string) {
 	if cmd, ok := m.commands[targetName]; ok {
 		m.commands[alias] = cmd

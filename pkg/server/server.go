@@ -16,6 +16,7 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/level"
 	"github.com/scaxe/scaxe-go/pkg/level/anvil"
 	"github.com/scaxe/scaxe-go/pkg/logger"
+	luapkg "github.com/scaxe/scaxe-go/pkg/lua"
 	"github.com/scaxe/scaxe-go/pkg/permission"
 	"github.com/scaxe/scaxe-go/pkg/player"
 	"github.com/scaxe/scaxe-go/pkg/protocol"
@@ -57,6 +58,8 @@ type Server struct {
 	CommandMap *command.CommandMap
 
 	OpManager *permission.OpManager
+
+	PluginManager *luapkg.PluginManager
 }
 
 func NewServer(cfg *config.ServerConfig) *Server {
@@ -129,6 +132,13 @@ func (s *Server) Start() error {
 	s.Level = level.NewLevel(s.Config.LevelName, levelPath, provider, s.Config.LevelType)
 	s.Levels[s.Config.LevelName] = s.Level
 
+	// Initialize Lua plugin system
+	s.PluginManager = luapkg.NewPluginManager(NewServerAPIAdapter(s), "plugins")
+	if err := s.PluginManager.LoadAll(); err != nil {
+		logger.Warn("Failed to load some plugins", "error", err)
+	}
+	defaults.SetPluginManager(s.PluginManager)
+
 	go s.tickLoop()
 
 	return nil
@@ -148,6 +158,11 @@ func (s *Server) Stop() {
 	s.mu.Unlock()
 
 	logger.Server("Stopping server...")
+
+	// Disable all plugins first
+	if s.PluginManager != nil {
+		s.PluginManager.DisableAll()
+	}
 
 	select {
 	case <-s.stopChan:
@@ -464,7 +479,13 @@ func (s *Server) tick() {
 	s.tickTimes[s.tickTimeIdx] = time.Since(tickStart)
 	s.tickTimeIdx = (s.tickTimeIdx + 1) % 20
 	s.lastTickTime = tickStart
+	currentTick := s.CurrentTick
 	s.mu.Unlock()
+
+	// Tick plugin scheduler tasks
+	if s.PluginManager != nil {
+		s.PluginManager.Tick(currentTick)
+	}
 
 	s.flushPackets()
 }
