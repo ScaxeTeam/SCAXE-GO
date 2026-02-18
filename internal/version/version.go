@@ -7,9 +7,9 @@ const (
 
 	Minor = 3
 
-	Patch = 0
+	Patch = 1
 
-	Codename = "Block Parity"
+	Codename = "performance++"
 
 	MinecraftVersion = "0.14.3"
 

@@ -35,9 +35,6 @@ const agplNotice = `
   Full license text: https://www.gnu.org/licenses/agpl-3.0.html
 ================================================================================`
 
-// Check reads eula.txt and returns true if the user has already accepted.
-// If the file does not exist or eula is not set to true, it displays the
-// AGPL-3.0 notice and prompts the user for acceptance.
 func Check() bool {
 	if isAccepted() {
 		return true

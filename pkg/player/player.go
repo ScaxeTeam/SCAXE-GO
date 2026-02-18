@@ -30,12 +30,13 @@ type Player struct {
 
 	DisplayName string
 
-	Spawned       bool
-	Connected     bool
-	LoggedIn      bool
-	LoadingChunks bool
-	Op            bool
-	Gamemode      int
+	Spawned        bool
+	Connected      bool
+	LoggedIn       bool
+	LoadingChunks  bool
+	SpawnReadyTick int64
+	Op             bool
+	Gamemode       int
 
 	ChunkRadius    int32
 	LoadedChunks   map[int64]bool
@@ -282,10 +283,6 @@ func (p *Player) Tick(currentTick int64) bool {
 		return false
 	}
 
-	if len(p.chunkLoadQueue) > 0 {
-		p.SendNextChunk()
-	}
-
 	p.checkNearEntities()
 
 	return true
@@ -442,7 +439,7 @@ func (p *Player) SwitchLevel(lvl interface{}) bool {
 	p.usedChunks = make(map[int64]bool)
 	p.mu.Unlock()
 
-	spawn := targetLevel.GetSpawnLocation()
+	spawn := targetLevel.GetSafeSpawn()
 
 	setSpawn := protocol.NewSetSpawnPositionPacket()
 	setSpawn.X = int32(spawn.X)
@@ -476,10 +473,6 @@ func (p *Player) OnChunkLoaded(chunk *world.Chunk) {
 
 	p.usedChunks[hash] = true
 	p.loadCounter++
-
-	if !p.Spawned && p.loadCounter >= p.spawnThreshold {
-		p.DoFirstSpawn()
-	}
 }
 
 func (p *Player) OnChunkUnloaded(chunk *world.Chunk) {
@@ -643,6 +636,10 @@ func (p *Player) GetChunkRadius() int32 {
 	return p.ChunkRadius
 }
 
+func (p *Player) GetSpawnThreshold() int {
+	return p.spawnThreshold
+}
+
 func ChunkHash(x, z int32) int64 {
 	return int64(x)<<32 | int64(uint32(z))
 }
@@ -666,6 +663,28 @@ func (p *Player) UnloadChunk(x, z int32) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	delete(p.LoadedChunks, hash)
+}
+
+func (p *Player) QueueChunks(hashes []int64) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.chunkLoadQueue = append(p.chunkLoadQueue, hashes...)
+}
+
+func (p *Player) GetLoadedChunkList() []int64 {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	result := make([]int64, 0, len(p.LoadedChunks))
+	for hash := range p.LoadedChunks {
+		result = append(result, hash)
+	}
+	return result
+}
+
+func (p *Player) GetLoadedChunkCount() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return len(p.LoadedChunks)
 }
 
 const (

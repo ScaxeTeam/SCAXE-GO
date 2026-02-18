@@ -60,7 +60,7 @@ func DefaultConfig() *ServerConfig {
 		PvP:             true,
 		ViewDistance:    8,
 		TickRate:        20,
-		DebugMode:       true,
+		DebugMode:       false,
 		DebugItemPickup: false,
 		Properties:      make(map[string]string),
 	}
@@ -186,6 +186,11 @@ func Load(path string) (*ServerConfig, error) {
 	}
 
 	logger.Info("Config.Load", "status", "configuration loaded", "properties", len(cfg.Properties))
+
+	if err := cfg.Save(path); err != nil {
+		logger.Warn("Config.Load", "warning", "failed to update config file", "err", err)
+	}
+
 	return cfg, nil
 }
 

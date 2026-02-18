@@ -5,8 +5,9 @@ import (
 )
 
 func init() {
-	generator.RegisterGenerator("gorigional", func(settings map[string]interface{}) generator.Generator {
-
+	factory := func(settings map[string]interface{}) generator.Generator {
 		return NewChunkGeneratorOverworld(0)
-	})
+	}
+	generator.RegisterGenerator("gorigional", factory)
+	generator.RegisterGenerator("normal", factory)
 }

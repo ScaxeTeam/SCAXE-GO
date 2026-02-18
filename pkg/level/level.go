@@ -1,7 +1,6 @@
 package level
 
 import (
-	"fmt"
 	"math"
 	"sync"
 
@@ -77,7 +76,7 @@ func NewLevel(name string, path string, provider Provider, generatorName string)
 	levelCounter++
 
 	if generatorName == "" || generatorName == "DEFAULT" {
-		generatorName = "normal"
+		generatorName = "gorigional"
 	}
 
 	l.Generator = generator.GetGenerator(generatorName, nil)
@@ -85,11 +84,12 @@ func NewLevel(name string, path string, provider Provider, generatorName string)
 		l.Generator.Init(l, l.Seed)
 		logger.Info("Level generator initialized", "name", l.Generator.GetName())
 	} else {
-
-		logger.Warn("Unknown generator, falling back to normal", "name", generatorName)
-		l.Generator = generator.GetGenerator("normal", nil)
+		logger.Warn("Unknown generator, falling back to gorigional", "name", generatorName)
+		l.Generator = generator.GetGenerator("gorigional", nil)
 		if l.Generator != nil {
 			l.Generator.Init(l, l.Seed)
+		} else {
+			logger.Error("Failed to load any generator, world generation will not work")
 		}
 	}
 
@@ -372,17 +372,10 @@ func (l *Level) GetNearbyEntities(bb *entity.AxisAlignedBB, except entity.IEntit
 			}
 			eBB := e.GetBoundingBox()
 			if eBB == nil {
-				fmt.Printf("[DEBUG] GetNearbyEntities: Entity %d has NIL BoundingBox!\n", e.GetID())
 				continue
 			}
 			if eBB.IntersectsWith(bb) {
 				nearby = append(nearby, e)
-			} else {
-
-				if l.Time%100 == 0 {
-					fmt.Printf("[DEBUG] GetNearbyEntities: Entity %d at BB=%v NOT intersecting searchBB=%v\n",
-						e.GetID(), eBB, bb)
-				}
 			}
 		}
 	}
@@ -448,7 +441,6 @@ func (l *Level) Tick() {
 
 	for _, e := range entities {
 
-		fmt.Printf("[DEBUG] Level.Tick: Ticking entity ID=%d type=%T\n", e.GetID(), e)
 		if !e.Tick(l.Time) {
 
 			l.RemoveEntity(e)
@@ -529,4 +521,68 @@ func (l *Level) GetSpawnLocation() *world.Vector3 {
 	}
 
 	return world.NewVector3(128, 64, 128)
+}
+
+func (l *Level) GetSafeSpawn() *world.Vector3 {
+	spawn := l.GetSpawnLocation()
+
+	if l.Generator == nil {
+		logger.Warn("GetSafeSpawn: generator is nil, using spawn location directly",
+			"x", spawn.X, "y", spawn.Y, "z", spawn.Z)
+		if spawn.Y < 64 {
+			spawn.Y = 64
+		}
+		return spawn
+	}
+
+	chunkX := int32(spawn.X) >> 4
+	chunkZ := int32(spawn.Z) >> 4
+	chunk := l.GetChunk(chunkX, chunkZ, true)
+	if chunk == nil {
+		logger.Warn("GetSafeSpawn: chunk is nil, defaulting to sea level", "cx", chunkX, "cz", chunkZ)
+		return world.NewVector3(spawn.X, 64, spawn.Z)
+	}
+
+	localX := int(int32(spawn.X) & 0x0F)
+	localZ := int(int32(spawn.Z) & 0x0F)
+
+	nonEmptySections := 0
+	for i := 0; i < 8; i++ {
+		if chunk.Sections[i] != nil && !chunk.Sections[i].IsEmpty() {
+			nonEmptySections++
+		}
+	}
+	logger.Info("GetSafeSpawn: chunk info",
+		"cx", chunkX, "cz", chunkZ,
+		"localX", localX, "localZ", localZ,
+		"nonEmptySections", nonEmptySections,
+		"generated", chunk.Generated,
+		"populated", chunk.Populated,
+	)
+
+	if nonEmptySections == 0 {
+		logger.Warn("GetSafeSpawn: chunk has no terrain data, defaulting to sea level")
+		return world.NewVector3(spawn.X, 64, spawn.Z)
+	}
+
+	y := 127
+	for y >= 0 {
+		id := chunk.GetBlockId(localX, y, localZ)
+		if block.Registry.IsSolid(id) {
+			logger.Info("GetSafeSpawn: found solid",
+				"y", y, "blockId", id, "safeY", y+1)
+			break
+		}
+		y--
+	}
+
+	safeY := y + 1
+	if safeY < 2 {
+		logger.Warn("GetSafeSpawn: no solid block found above bedrock, defaulting to sea level")
+		safeY = 64
+	}
+
+	logger.Info("GetSafeSpawn: result",
+		"spawnX", spawn.X, "spawnY", float64(safeY), "spawnZ", spawn.Z)
+	return world.NewVector3(spawn.X, float64(safeY), spawn.Z)
 }

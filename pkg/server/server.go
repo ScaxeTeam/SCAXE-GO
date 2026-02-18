@@ -133,6 +133,18 @@ func (s *Server) Start() error {
 	s.Level = level.NewLevel(s.Config.LevelName, levelPath, provider, s.Config.LevelType)
 	s.Levels[s.Config.LevelName] = s.Level
 
+	spawn := s.Level.GetSpawnLocation()
+	spawnCX := int32(spawn.X) >> 4
+	spawnCZ := int32(spawn.Z) >> 4
+	const spawnChunkRadius = 3
+	logger.Server("Preparing spawn area", "cx", spawnCX, "cz", spawnCZ, "radius", spawnChunkRadius)
+	for x := spawnCX - spawnChunkRadius; x <= spawnCX+spawnChunkRadius; x++ {
+		for z := spawnCZ - spawnChunkRadius; z <= spawnCZ+spawnChunkRadius; z++ {
+			s.Level.GetChunk(x, z, true)
+		}
+	}
+	logger.Server("Spawn area ready", "chunks", (spawnChunkRadius*2+1)*(spawnChunkRadius*2+1))
+
 	s.PluginManager = luapkg.NewPluginManager(NewServerAPIAdapter(s), "plugins")
 	if err := s.PluginManager.LoadAll(); err != nil {
 		logger.Warn("Failed to load some plugins", "error", err)
@@ -462,16 +474,23 @@ func (s *Server) tick() {
 	}
 
 	for _, p := range s.GetOnlinePlayers() {
-		if p.IsSpawned() {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						logger.Error("Panic in Player.Tick", "player", p.Username, "error", r)
-					}
-				}()
-				p.Tick(s.CurrentTick)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("Panic in Player.Tick", "player", p.Username, "error", r)
+				}
 			}()
-		}
+
+			if p.LoadingChunks && !p.IsSpawned() {
+				s.checkChunks(p)
+				s.tryFirstSpawn(p)
+			}
+
+			if p.IsSpawned() {
+				p.Tick(s.CurrentTick)
+				s.checkChunks(p)
+			}
+		}()
 	}
 
 	s.mu.Lock()
@@ -672,6 +691,7 @@ func (s *Server) handleLogin(p *player.Player, pkt *protocol.LoginPacket) {
 
 	p.HandleLogin(pkt.Username, pkt.ClientUUID, pkt.SkinID, pkt.SkinData, pkt.Protocol)
 	p.ClientID = uint64(pkt.ClientID)
+	p.SetGamemode(s.Config.Gamemode)
 
 	if s.OpManager.IsOp(pkt.Username, pkt.ClientID) {
 		p.SetOp(true)
@@ -692,8 +712,11 @@ func (s *Server) handleLogin(p *player.Player, pkt *protocol.LoginPacket) {
 
 	var batchPackets []protocol.DataPacket
 
-	spawn := s.Level.GetSpawnLocation()
+	spawn := s.Level.GetSafeSpawn()
 	spawnX, spawnY, spawnZ := int32(spawn.X), int32(spawn.Y), int32(spawn.Z)
+
+	p.Human.Level = s.Level
+	p.SetPosition(entity.NewVector3(float64(spawnX), float64(spawnY), float64(spawnZ)))
 
 	startGame := protocol.NewStartGamePacket()
 	startGame.Seed = int32(s.Level.GetSeed())
@@ -751,24 +774,6 @@ func (s *Server) handleLogin(p *player.Player, pkt *protocol.LoginPacket) {
 	setHealth.Health = 20
 	batchPackets = append(batchPackets, setHealth)
 
-	spawnChunkX := spawnX >> 4
-	spawnChunkZ := spawnZ >> 4
-
-	radius := int32(2)
-	for cx := spawnChunkX - radius; cx <= spawnChunkX+radius; cx++ {
-		for cz := spawnChunkZ - radius; cz <= spawnChunkZ+radius; cz++ {
-			chunk := s.Level.GetChunk(cx, cz, true)
-
-			fullChunk := protocol.NewFullChunkDataPacket()
-			fullChunk.ChunkX = cx
-			fullChunk.ChunkZ = cz
-			fullChunk.Order = protocol.ChunkOrderLayered
-			fullChunk.Data = chunk.ToPacketBytes()
-			batchPackets = append(batchPackets, fullChunk)
-			p.MarkChunkLoaded(cx, cz)
-		}
-	}
-
 	logger.Server("Sending game data", "player", pkt.Username, "packets", len(batchPackets))
 
 	batchPayload, err := protocol.CreateBatch(batchPackets)
@@ -788,44 +793,9 @@ func (s *Server) handleLogin(p *player.Player, pkt *protocol.LoginPacket) {
 		s.sendPacket(p, protocol.NewContainerSetContentPacket(121, nil))
 	}
 
-	adventurePk := protocol.NewAdventureSettingsPacket()
-	flags := int32(0)
-	if p.GetGamemode() == 1 {
-		flags |= 0x80
-	}
-	adventurePk.Flags = flags
-	adventurePk.UserPermission = 2
-	adventurePk.GlobalPermission = 2
-	s.sendPacket(p, adventurePk)
+	p.LoadingChunks = true
 
-	playStatusSpawn := protocol.NewPlayStatusPacket()
-	playStatusSpawn.Status = protocol.PlayStatusPlayerSpawn
-	s.sendPacket(p, playStatusSpawn)
-
-	welcome := protocol.NewTextPacket()
-	welcome.TextType = protocol.TextTypeRaw
-	welcome.Message = fmt.Sprintf("§aWelcome to %s!", s.Config.ServerName)
-	s.sendPacket(p, welcome)
-
-	p.Spawned = true
-	p.Human.Level = s.Level
-	p.SetPosition(entity.NewVector3(float64(spawnX), float64(spawnY), float64(spawnZ)))
-
-	s.sendExistingPlayersTo(p)
-
-	for _, other := range s.GetOnlinePlayers() {
-		if other != p && other.Spawned {
-			s.spawnPlayerTo(p, other)
-		}
-	}
-
-	logger.Player("Login complete", "player", pkt.Username, "online", s.GetOnlineCount())
-
-	joinMsg := protocol.NewTextPacket()
-	joinMsg.TextType = protocol.TextTypeTranslation
-	joinMsg.Message = "multiplayer.player.joined"
-	joinMsg.Parameters = []string{pkt.Username}
-	s.BroadcastPacket(joinMsg)
+	logger.Player("Login complete, loading chunks", "player", pkt.Username, "online", s.GetOnlineCount())
 }
 
 func (s *Server) handleText(p *player.Player, pkt *protocol.TextPacket) {
@@ -883,13 +853,91 @@ func (s *Server) handleRequestChunkRadius(p *player.Player, pkt *protocol.Reques
 	s.syncInventory(p)
 }
 
+func (s *Server) tryFirstSpawn(p *player.Player) {
+
+	if p.SpawnReadyTick == 0 {
+		if p.GetLoadedChunkCount() >= p.GetSpawnThreshold() {
+			p.SpawnReadyTick = s.CurrentTick
+			logger.Debug("Spawn ready, waiting 1 tick for chunk processing",
+				"player", p.Username, "chunks", p.GetLoadedChunkCount(),
+				"threshold", p.GetSpawnThreshold(), "tick", s.CurrentTick)
+			return
+		}
+		return
+	}
+
+	if s.CurrentTick <= p.SpawnReadyTick {
+		return
+	}
+
+	adventurePk := protocol.NewAdventureSettingsPacket()
+	flags := int32(0)
+	if p.GetGamemode() == 1 || s.Config.AllowFlight {
+		flags |= 0x80
+	}
+	adventurePk.Flags = flags
+	adventurePk.UserPermission = 2
+	adventurePk.GlobalPermission = 2
+	s.sendPacket(p, adventurePk)
+
+	playStatusSpawn := protocol.NewPlayStatusPacket()
+	playStatusSpawn.Status = protocol.PlayStatusPlayerSpawn
+	s.sendPacket(p, playStatusSpawn)
+
+	movePk := protocol.NewMovePlayerPacket()
+	movePk.EntityID = p.GetID()
+	movePk.X = float32(p.Position.X)
+	movePk.Y = float32(p.Position.Y) + 1.62
+	movePk.Z = float32(p.Position.Z)
+	movePk.Yaw = float32(p.Yaw)
+	movePk.BodyYaw = float32(p.Yaw)
+	movePk.Pitch = float32(p.Pitch)
+	movePk.Mode = 1
+	movePk.OnGround = true
+	s.sendPacket(p, movePk)
+
+	welcome := protocol.NewTextPacket()
+	welcome.TextType = protocol.TextTypeRaw
+	welcome.Message = fmt.Sprintf("§aWelcome to %s!", s.Config.ServerName)
+	s.sendPacket(p, welcome)
+
+	p.Spawned = true
+	p.LoadingChunks = false
+
+	s.sendExistingPlayersTo(p)
+
+	for _, other := range s.GetOnlinePlayers() {
+		if other != p && other.Spawned {
+			s.spawnPlayerTo(p, other)
+		}
+	}
+
+	logger.Player("First spawn", "player", p.Username, "chunks", p.GetLoadedChunkCount())
+
+	joinMsg := protocol.NewTextPacket()
+	joinMsg.TextType = protocol.TextTypeTranslation
+	joinMsg.Message = "multiplayer.player.joined"
+	joinMsg.Parameters = []string{p.Username}
+	s.BroadcastPacket(joinMsg)
+
+	s.syncInventory(p)
+}
+
 func (s *Server) checkChunks(p *player.Player) {
 	radius := p.GetChunkRadius()
 	cx := int32(p.Position.X) >> 4
 	cz := int32(p.Position.Z) >> 4
 
+	const maxChunksPerCall = 8
+
+	var chunkPackets []protocol.DataPacket
+	var loadedCoords [][2]int32
+
 	for x := cx - radius; x <= cx+radius; x++ {
 		for z := cz - radius; z <= cz+radius; z++ {
+			if len(chunkPackets) >= maxChunksPerCall {
+				break
+			}
 			if !p.IsChunkLoaded(x, z) {
 				chunk := s.Level.GetChunk(x, z, true)
 				if chunk == nil {
@@ -901,10 +949,39 @@ func (s *Server) checkChunks(p *player.Player) {
 				fullChunk.ChunkZ = z
 				fullChunk.Order = protocol.ChunkOrderLayered
 				fullChunk.Data = chunk.ToPacketBytes()
-				s.sendPacket(p, fullChunk)
-
-				p.MarkChunkLoaded(x, z)
+				chunkPackets = append(chunkPackets, fullChunk)
+				loadedCoords = append(loadedCoords, [2]int32{x, z})
 			}
+		}
+		if len(chunkPackets) >= maxChunksPerCall {
+			break
+		}
+	}
+
+	if len(chunkPackets) > 0 {
+		batchPayload, err := protocol.CreateBatch(chunkPackets)
+		if err != nil {
+			logger.Error("Failed to create chunk batch", "error", err)
+		} else {
+			batchPkt := protocol.NewBatchPacket()
+			batchPkt.Payload = batchPayload
+			s.sendPacket(p, batchPkt)
+		}
+
+		for _, coord := range loadedCoords {
+			p.MarkChunkLoaded(coord[0], coord[1])
+		}
+	}
+
+	unloadRadius := radius + 2
+	loaded := p.GetLoadedChunkList()
+	for _, hash := range loaded {
+		lx := int32(hash >> 32)
+		lz := int32(hash & 0xFFFFFFFF)
+		dx := lx - cx
+		dz := lz - cz
+		if dx < -unloadRadius || dx > unloadRadius || dz < -unloadRadius || dz > unloadRadius {
+			p.UnloadChunk(lx, lz)
 		}
 	}
 
