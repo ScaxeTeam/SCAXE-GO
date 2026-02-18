@@ -5,11 +5,11 @@ import "fmt"
 const (
 	Major = 0
 
-	Minor = 2
+	Minor = 3
 
 	Patch = 0
 
-	Codename = "Entity & Event"
+	Codename = "Block Parity"
 
 	MinecraftVersion = "0.14.3"
 

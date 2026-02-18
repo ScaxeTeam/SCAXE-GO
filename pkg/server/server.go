@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/scaxe/scaxe-go/internal/version"
 	"github.com/scaxe/scaxe-go/pkg/block"
 	"github.com/scaxe/scaxe-go/pkg/command"
 	"github.com/scaxe/scaxe-go/pkg/command/defaults"
@@ -120,7 +121,7 @@ func (s *Server) Start() error {
 	s.Running = true
 	s.StartTime = time.Now()
 
-	logger.Banner(s.Config.ServerName, "SCAXE-GO v0.1.0", s.Address, s.Config.MaxPlayers)
+	logger.Banner(s.Config.ServerName, "SCAXE-GO "+version.String(), s.Address, s.Config.MaxPlayers)
 	logger.Server("Server started successfully", "tps", TicksPerSecond)
 
 	levelPath := "worlds/" + s.Config.LevelName
@@ -132,7 +133,6 @@ func (s *Server) Start() error {
 	s.Level = level.NewLevel(s.Config.LevelName, levelPath, provider, s.Config.LevelType)
 	s.Levels[s.Config.LevelName] = s.Level
 
-	// Initialize Lua plugin system
 	s.PluginManager = luapkg.NewPluginManager(NewServerAPIAdapter(s), "plugins")
 	if err := s.PluginManager.LoadAll(); err != nil {
 		logger.Warn("Failed to load some plugins", "error", err)
@@ -159,7 +159,6 @@ func (s *Server) Stop() {
 
 	logger.Server("Stopping server...")
 
-	// Disable all plugins first
 	if s.PluginManager != nil {
 		s.PluginManager.DisableAll()
 	}
@@ -482,7 +481,6 @@ func (s *Server) tick() {
 	currentTick := s.CurrentTick
 	s.mu.Unlock()
 
-	// Tick plugin scheduler tasks
 	if s.PluginManager != nil {
 		s.PluginManager.Tick(currentTick)
 	}
