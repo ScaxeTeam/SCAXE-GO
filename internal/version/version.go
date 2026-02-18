@@ -7,9 +7,9 @@ const (
 
 	Minor = 3
 
-	Patch = 1
+	Patch = 2
 
-	Codename = "performance++"
+	Codename = "gorigional++"
 
 	MinecraftVersion = "0.14.3"
 

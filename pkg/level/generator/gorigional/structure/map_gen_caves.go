@@ -161,6 +161,10 @@ func (c *MapGenCaves) AddTunnel(seed int64, chunkX, chunkZ int, chunk BlockSette
 
 									b, _ := chunk.GetBlock(i2, j2, k2)
 									if b == 1 || b == 3 || b == 2 {
+										aboveID, _ := chunk.GetBlock(i2, j2+1, k2)
+										if aboveID == 8 || aboveID == 9 {
+											continue
+										}
 										if j2 < 10 {
 											chunk.SetBlock(i2, j2, k2, 10, 0)
 										} else {

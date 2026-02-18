@@ -493,7 +493,9 @@ func (g *ChunkGeneratorOverworld) PopulateChunk(cx, cz int32) {
 		g.scatteredFeature.GenerateStructure(adapter, int(cx), int(cz))
 	}
 
-	if b.GetID() != 2 && b.GetID() != 17 && g.settings.useWaterLakes && !flag && rnd.NextBoundedInt(g.settings.waterLakeChance) == 0 {
+	isOceanOrRiver := biomeID == 0 || biomeID == 10 || biomeID == 24 || biomeID == 7 || biomeID == 11
+
+	if b.GetID() != 2 && b.GetID() != 17 && !isOceanOrRiver && g.settings.useWaterLakes && !flag && rnd.NextBoundedInt(g.settings.waterLakeChance) == 0 {
 		i1 := rnd.NextBoundedInt(16) + 8
 		j1 := rnd.NextBoundedInt(256)
 		k1 := rnd.NextBoundedInt(16) + 8
@@ -502,7 +504,7 @@ func (g *ChunkGeneratorOverworld) PopulateChunk(cx, cz int32) {
 		lake.Generate(g.settings.ChunkManager, rnd, world.NewBlockPos(int32(x+i1), int32(j1), int32(z+k1)))
 	}
 
-	if !flag && rnd.NextBoundedInt(g.settings.lavaLakeChance/10) == 0 && g.settings.useLavaLakes {
+	if !flag && !isOceanOrRiver && rnd.NextBoundedInt(g.settings.lavaLakeChance/10) == 0 && g.settings.useLavaLakes {
 		i2 := rnd.NextBoundedInt(16) + 8
 		l2 := rnd.NextBoundedInt(rnd.NextBoundedInt(248) + 8)
 		k3 := rnd.NextBoundedInt(16) + 8

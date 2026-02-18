@@ -106,6 +106,12 @@ func (cp *CavePopulator) generateTunnel(chunk *world.Chunk, random *rand.Random,
 
 					blockID, _ := chunk.GetBlock(localX, cy, localZ)
 					if blockID != 0 && blockID != 9 && blockID != 10 && blockID != 11 {
+						if cy+1 < 128 {
+							aboveID, _ := chunk.GetBlock(localX, cy+1, localZ)
+							if aboveID == 9 || aboveID == 8 {
+								continue
+							}
+						}
 						chunk.SetBlock(localX, cy, localZ, BlockAir, 0)
 					}
 				}

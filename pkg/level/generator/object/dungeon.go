@@ -30,7 +30,7 @@ func (d *Dungeon) Generate(w populator.ChunkManager, r *rand.Random, pos world.B
 			for i3 := l1; i3 <= i2; i3++ {
 				target := pos.Add(int32(k2), int32(l2), int32(i3))
 				mat := w.GetBlockId(target.X(), target.Y(), target.Z())
-				isSolid := mat != 0
+				isSolid := mat != 0 && mat != block.WATER && mat != block.STILL_WATER
 
 				if l2 == -1 && !isSolid {
 					return false
@@ -55,7 +55,11 @@ func (d *Dungeon) Generate(w populator.ChunkManager, r *rand.Random, pos world.B
 
 					if k3 != k && i4 != -1 && k4 != l1 && k3 != l && i4 != 4 && k4 != i2 {
 						if w.GetBlockId(target.X(), target.Y(), target.Z()) != block.CHEST {
-							w.SetBlock(target.X(), target.Y(), target.Z(), 0, 0, false)
+							above := w.GetBlockId(target.X(), target.Y()+1, target.Z())
+							existing := w.GetBlockId(target.X(), target.Y(), target.Z())
+							if above != block.WATER && above != block.STILL_WATER && existing != block.WATER && existing != block.STILL_WATER {
+								w.SetBlock(target.X(), target.Y(), target.Z(), 0, 0, false)
+							}
 						}
 					} else if target.Y() >= 0 && w.GetBlockId(target.X(), target.Y()-1, target.Z()) == 0 {
 						w.SetBlock(target.X(), target.Y(), target.Z(), 0, 0, false)

@@ -132,6 +132,10 @@ func (m *MapGenRavine) addTunnel(seed int64, chunkX, chunkZ int, chunk *world.Ch
 							id, _ := chunk.GetBlock(lx, iy, lz)
 
 							if id == 1 || id == 2 || id == 3 {
+								aboveID, _ := chunk.GetBlock(lx, iy+1, lz)
+								if aboveID == 8 || aboveID == 9 {
+									continue
+								}
 
 								chunk.SetBlock(lx, iy, lz, 0, 0)
 

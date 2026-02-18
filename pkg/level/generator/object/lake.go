@@ -91,11 +91,25 @@ func (l *Lake) Generate(w populator.ChunkManager, r *rand.Random, pos world.Bloc
 		for i3 := 0; i3 < 16; i3++ {
 			for i4 := 0; i4 < 8; i4++ {
 				if aboolean[(l1*16+i3)*8+i4] {
+					bx := x + int32(l1)
+					by := y + int32(i4)
+					bz := z + int32(i3)
+
+					existing := w.GetBlockId(bx, by, bz)
+					if existing == block.WATER || existing == block.STILL_WATER {
+						continue
+					}
+
+					above := w.GetBlockId(bx, by+1, bz)
+					if above == block.WATER || above == block.STILL_WATER {
+						continue
+					}
+
 					targetBlock := l.BlockID
 					if i4 >= 4 {
 						targetBlock = 0
 					}
-					w.SetBlock(x+int32(l1), y+int32(i4), z+int32(i3), targetBlock, 0, false)
+					w.SetBlock(bx, by, bz, targetBlock, 0, false)
 				}
 			}
 		}
