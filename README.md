@@ -2,265 +2,321 @@
 
 <div align="center">
 
-![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)
+![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)
 ![MCPE Version](https://img.shields.io/badge/MCPE-0.14.3-green?style=flat)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20|%20Linux-blue?style=flat)
 
-**一个使用 Go 语言重写的高精度 Minecraft Pocket Edition 0.14.3 服务器核心**
+**A high-fidelity Minecraft Pocket Edition 0.14.3 server core rewritten in Go**
 
-*世界生成算法与 Minecraft Java Edition 1.12.2 保持毫米级精度对齐*
+*World generation algorithms aligned with Minecraft Java Edition 1.12.2 at bit-level precision*
 
 </div>
 
 ---
 
-## ✨ 项目特色
+## Features
 
-- 🎯 **高精度世界生成** - 与 Minecraft Java 1.12.2 保持 93.77% 地形一致性
-- 🧬 **位级精度 GenLayer** - 生物群系系统达到 99.9% 位级精度还原
-- 🚀 **高性能并发** - 基于 Go 协程的线程安全区块生成
-- 📡 **完整协议实现** - MCPE 0.14.3 (Protocol 70) 完整支持
-
----
-
-## 🔧 已实现功能
-
-### 核心系统
-
-#### 🌍 世界生成引擎 (Gorigional)
-
-基于 Minecraft Java 1.12.2 源码精确移植的主世界生成器：
-
-| 功能模块          | 状态   | 精度           |
-| ----------------- | ------ | -------------- |
-| 密度网格地形      | ✅ 完成 | 93.77%         |
-| GenLayer 生物群系 | ✅ 完成 | 99.9% 位级精度 |
-| 村庄结构          | ✅ 完成 | 100%           |
-| 沙漠神殿          | ✅ 完成 | 100%           |
-| 丛林神庙          | ✅ 完成 | 100%           |
-| 沼泽小屋          | ✅ 完成 | 100%           |
-| 废弃矿井          | ✅ 完成 | 100%           |
-| 要塞              | ✅ 完成 | 100%           |
-| 洞穴              | ✅ 完成 | SinTable 对齐  |
-| 峡谷              | ✅ 完成 | SinTable 对齐  |
-| 128 高度压缩      | ✅ 完成 | MCPE 0.14 适配 |
-
-#### 🌲 生物群系系统
-
-完整移植的生物群系及装饰物系统：
-
-**主要生物群系：**
-- 平原 (Plains) / 向日葵平原 (Sunflower Plains)
-- 森林 (Forest) / 繁花森林 (Flower Forest)
-- 针叶林 (Taiga) / 寒冷针叶林 (Cold Taiga)
-- 丛林 (Jungle) / 丛林边缘 (Jungle Edge)
-- 沙漠 (Desert) / 沙滩 (Beach)
-- 热带草原 (Savanna) / 高原 (Plateau)
-- 平顶山 (Mesa) / 平顶山高原 (Mesa Plateau)
-- 黑森林 (Roofed Forest)
-- 极限山脉 (Extreme Hills)
-- 沼泽 (Swamp)
-
-**装饰物生成：**
-- 🌳 树木：橡木、白桦、云杉、松树、金合欢、深色橡木、丛林大树、大型松树
-- 💎 矿石：煤、铁、金、红石、钻石、青金石（精确 RNG 序列）
-- 🌺 植被：花朵、草、蘑菇、仙人掌、芦苇、睡莲
-- 🏔️ 地形特征：湖泊、地牢、冰刺平原
-
-#### 📡 网络协议层
-
-完整实现 MCPE 0.14.3 (Protocol 70)：
-
-| 数据包类型 | 数量 | 状态 |
-| ---------- | ---- | ---- |
-| 登录/认证  | 6    | ✅    |
-| 区块数据   | 4    | ✅    |
-| 实体管理   | 12   | ✅    |
-| 玩家操作   | 10   | ✅    |
-| 物品/背包  | 8    | ✅    |
-| 世界事件   | 8    | ✅    |
-| 其他       | 15+  | ✅    |
-
-**协议特性：**
-- BatchPacket (0x92) 压缩打包
-- StartGame (0x95) 完整初始化
-- RakNet 可靠传输层
-- NBT 小端序列化
-
-#### 🎮 游戏指令系统
-
-已实现 40+ 个管理员/玩家指令：
-
-| 类别           | 指令                                                                |
-| -------------- | ------------------------------------------------------------------- |
-| **玩家管理**   | `/ban`, `/ban-ip`, `/kick`, `/op`, `/deop`, `/whitelist`, `/pardon` |
-| **游戏模式**   | `/gamemode`, `/defaultgamemode`, `/difficulty`                      |
-| **传送/位置**  | `/tp`, `/spawn`, `/spawnpoint`, `/setworldspawn`                    |
-| **物品/效果**  | `/give`, `/enchant`, `/effect`, `/xp`                               |
-| **世界编辑**   | `/setblock`, `/fill`, `/world_edit`                                 |
-| **服务器管理** | `/stop`, `/save`, `/time`, `/weather`, `/seed`                      |
-| **信息查询**   | `/help`, `/list`, `/status`, `/version`, `/tps`, `/ping`            |
-| **其他**       | `/say`, `/tell`, `/me`, `/kill`, `/summon`, `/particle`             |
-
-#### 🧱 方块与物品
-
-- 完整的方块 ID 系统（兼容 MCPE 0.14）
-- 物品元数据与 NBT 支持
-- 合成配方系统框架
-
-#### 👾 实体系统
-
-- 实体基类 (Entity)
-- 生物实体 (Living/Mob)
-- 玩家实体 (Human)
-- 物品掉落物 (ItemEntity)
-- AABB 碰撞检测
-- 实体属性系统 (Attributes)
-- 实体元数据 (Metadata)
-- AI 行为框架
+- **High-Fidelity World Generation** - 93.77% terrain consistency with Minecraft Java 1.12.2
+- **Bit-Level GenLayer Precision** - Biome system achieves 99.9% bit-level accuracy
+- **High-Performance Concurrency** - Thread-safe chunk generation powered by Go goroutines
+- **Full Protocol Implementation** - Complete MCPE 0.14.3 (Protocol 70) support
+- **Lua Plugin System** - Extensible plugin architecture with Lua scripting and hot-reload
 
 ---
 
-## 📊 技术验证
+## Implemented Features
 
-### 世界生成精度对比
+### Core Systems
 
-基于种子 `114514` 对 1280 个区块（约 3380 万方块）进行验证：
+#### World Generation Engine (Gorigional)
 
-| 指标             | 结果  | 说明               |
-| ---------------- | ----- | ------------------ |
-| **方块 ID 差异** | 7.03% | 主要为浮点累积误差 |
-| **生物群系差异** | 0.12% | 接近位级精度       |
-| **结构位置**     | 100%  | 完全一致           |
+A precise port of the Overworld generator from Minecraft Java 1.12.2 source:
 
-### 已修复的关键问题
+| Module               | Status   | Accuracy          |
+| -------------------- | -------- | ----------------- |
+| Density Grid Terrain | Complete | 93.77%            |
+| GenLayer Biomes      | Complete | 99.9% bit-level   |
+| Villages             | Complete | 100%              |
+| Desert Temple        | Complete | 100%              |
+| Jungle Temple        | Complete | 100%              |
+| Witch Hut            | Complete | 100%              |
+| Abandoned Mineshaft  | Complete | 100%              |
+| Stronghold           | Complete | 100%              |
+| Caves                | Complete | SinTable-aligned  |
+| Ravines              | Complete | SinTable-aligned  |
+| 128-Height Squash    | Complete | MCPE 0.14 adapted |
 
-- ✅ 矿石 RNG 消耗（NextDouble → NextFloat）
-- ✅ 表面深度坐标缩放（16x 乘法修复）
-- ✅ 区块播种对齐（Java 1.12 魔法常量）
-- ✅ 峡谷数学函数（65536 项 SinTable）
-- ✅ 人口播种修复（动态乘数）
-- ✅ 光照 BFS 传播引擎
-- ✅ 生物群系颜色 Alpha 通道
+#### Biome System
+
+Fully ported biome and decorator system:
+
+**Major Biomes:**
+- Plains / Sunflower Plains
+- Forest / Flower Forest
+- Taiga / Cold Taiga
+- Jungle / Jungle Edge
+- Desert / Beach
+- Savanna / Plateau
+- Mesa / Mesa Plateau
+- Roofed Forest
+- Extreme Hills
+- Swamp
+
+**Decoration Generation:**
+- Trees: Oak, Birch, Spruce, Pine, Acacia, Dark Oak, Mega Jungle, Mega Pine
+- Ores: Coal, Iron, Gold, Redstone, Diamond, Lapis Lazuli (precise RNG sequences)
+- Vegetation: Flowers, Grass, Mushrooms, Cacti, Sugar Cane, Lily Pads
+- Terrain Features: Lakes, Dungeons, Ice Spikes
+
+#### Network Protocol Layer
+
+Full implementation of MCPE 0.14.3 (Protocol 70):
+
+| Packet Category   | Count | Status   |
+| ----------------- | ----- | -------- |
+| Login/Auth        | 6     | Complete |
+| Chunk Data        | 4     | Complete |
+| Entity Management | 12    | Complete |
+| Player Actions    | 10    | Complete |
+| Items/Inventory   | 8     | Complete |
+| World Events      | 8     | Complete |
+| Other             | 15+   | Complete |
+
+**Protocol Features:**
+- BatchPacket (0x92) compression
+- StartGame (0x95) full initialization
+- RakNet reliable transport layer
+- NBT little-endian serialization
+
+#### Command System
+
+45+ admin and player commands implemented:
+
+| Category          | Commands                                                            |
+| ----------------- | ------------------------------------------------------------------- |
+| **Player Mgmt**   | `/ban`, `/ban-ip`, `/kick`, `/op`, `/deop`, `/whitelist`, `/pardon` |
+| **Game Mode**     | `/gamemode`, `/defaultgamemode`, `/difficulty`                      |
+| **Teleport/Loc**  | `/tp`, `/spawnpoint`, `/setworldspawn`                              |
+| **Items/Effects** | `/give`, `/enchant`, `/effect`, `/xp`                               |
+| **World Edit**    | `/setblock`, `/fill`, `/world_edit`                                 |
+| **Server Mgmt**   | `/stop`, `/save`, `/time`, `/weather`, `/seed`                      |
+| **Information**   | `/help`, `/list`, `/status`, `/version`, `/tps`, `/ping`            |
+| **Communication** | `/say`, `/tell`, `/me`                                              |
+| **Other**         | `/kill`, `/summon`, `/particle`, `/biome_find`, `/mw`               |
+
+#### Lua Plugin System
+
+Built-in Lua scripting engine for server extensibility:
+
+- YAML-based plugin descriptors (`plugin.yml`)
+- Event listener API (`events.listen`)
+- Command registration API (`commands.register`)
+- Player, Server, Level, Logger, and Scheduler APIs
+- Plugin management commands (`/plugins`, `/luaplugin`)
+
+**Example plugin structure:**
+```
+plugins/
+  example/
+    plugin.yml      # Plugin metadata
+    main.lua        # Plugin entry point
+```
+
+#### Block and Item System
+
+- Full block ID system (MCPE 0.14 compatible)
+- Item metadata and NBT support
+- Crafting recipe system framework
+
+#### Entity System
+
+- Entity base class (Entity)
+- Living entities (Living/Mob)
+- Human entities (Human)
+- Item drop entities (ItemEntity)
+- AABB collision detection
+- Entity attributes system (Attributes)
+- Entity metadata (Metadata)
+- AI behavior framework
 
 ---
 
-## 🚀 快速开始
+## Technical Verification
 
-### 环境要求
+### World Generation Accuracy
 
-- Go 1.21 或更高版本
-- Windows / Linux 操作系统
+Verified against seed `114514` across 1280 chunks (approximately 33.8 million blocks):
 
-### 编译运行
+| Metric            | Result | Notes                          |
+| ----------------- | ------ | ------------------------------ |
+| **Block ID Diff** | 7.03%  | Primarily floating-point drift |
+| **Biome Diff**    | 0.12%  | Near bit-level precision       |
+| **Structure Pos** | 100%   | Exact match                    |
+
+### Key Issues Resolved
+
+- Ore RNG consumption (NextDouble to NextFloat)
+- Surface depth coordinate scaling (16x multiplication fix)
+- Chunk seeding alignment (Java 1.12 magic constants)
+- Ravine math functions (65536-entry SinTable)
+- Population seeding fix (dynamic multipliers)
+- BFS light propagation engine
+- Biome color alpha channel
+
+---
+
+## Quick Start
+
+### Requirements
+
+- Go 1.22 or later
+- Windows / Linux
+
+### Build and Run
 
 ```bash
-# 克隆仓库
-git clone https://github.com/ScaxeTeam/SCAXE-GO0.14.git
-cd SCAXE-GO0.14
+# Clone the repository
+git clone https://github.com/ScaxeTeam/SCAXE-GO.git
+cd SCAXE-GO
 
-# 编译
-go build -o scaxe-go ./cmd/main
+# Build
+go build -o scaxe-go ./cmd/server
 
-# 运行
+# Run
 ./scaxe-go
 ```
 
-### 配置文件
+### Command-Line Options
 
-`server.properties` 主要配置项：
+```
+--version           Show version information and exit
+--help              Show help message and exit
+--config PATH       Path to server.properties (default: server.properties)
+--debug             Enable debug logging (shows packet details)
+--no-color          Disable colored output
+```
+
+### Configuration
+
+`server.properties` key settings:
 
 ```properties
+server-name=Scaxe Go Server
 server-port=19132
+server-ip=0.0.0.0
 max-players=20
-world-name=world
+motd=A Scaxe Go Server
 gamemode=0
 difficulty=1
-level-type=DEFAULT
-seed=
+level-name=world
+level-seed=
+level-type=gorigional
+online-mode=false
+white-list=false
+view-distance=8
+pvp=true
 ```
 
 ---
 
-## 📁 项目结构
+## Project Structure
 
 ```
-SCAXE-GO0.14/
-├── cmd/                    # 程序入口
-├── internal/               # 内部实现
-├── pkg/
-│   ├── block/             # 方块系统
-│   ├── command/           # 指令系统
-│   │   └── defaults/      # 内置指令 (40+)
-│   ├── entity/            # 实体系统
-│   │   ├── ai/           # AI 行为
-│   │   └── attribute/    # 属性系统
-│   ├── event/             # 事件系统
-│   ├── inventory/         # 背包系统
-│   ├── item/              # 物品系统
-│   ├── level/             # 世界/关卡
-│   │   └── generator/     # 世界生成器
-│   │       ├── biome/    # 生物群系 (18+)
-│   │       ├── gorigional/# Java 1.12 精确移植引擎
-│   │       │   ├── structure/  # 结构生成
-│   │       │   └── gen_layer/  # GenLayer (30层)
-│   │       └── object/   # 装饰物 (35+)
-│   ├── math/              # 数学工具
-│   ├── nbt/               # NBT 序列化
-│   ├── network/           # 网络层
-│   ├── protocol/          # MCPE 协议 (63 种数据包)
-│   ├── raknet/            # RakNet 实现
-│   ├── scheduler/         # 任务调度
-│   ├── server/            # 服务器核心
-│   └── world/             # 世界管理
-└── tools/                  # 开发工具
+SCAXE-GO/
+  cmd/
+    server/               # Application entry point
+  internal/
+    version/              # Version constants
+    wizard/               # First-run setup wizard
+  pkg/
+    block/                # Block system
+    command/              # Command system
+      defaults/           # Built-in commands (45+)
+    config/               # Configuration loader
+    crafting/             # Crafting recipe system
+    entity/               # Entity system
+      ai/                 # AI behaviors
+      attribute/          # Attribute system
+      effect/             # Status effects
+    event/                # Event system
+    inventory/            # Inventory system
+    item/                 # Item system
+    level/                # World / Level
+      anvil/              # Anvil format I/O
+      generator/          # World generator
+        biome/            # Biome definitions (18)
+        biomegrid/        # Biome grid mapping
+        gorigional/       # Java 1.12 exact-port engine
+          layer/          # GenLayer pipeline (24 layers)
+          noise/          # Noise generators
+          structure/      # Structure generation
+        ground/           # Ground populators
+        object/           # Decorators (35+)
+        objects/          # Additional object types
+        populator/        # Populator base
+        populators/       # Populator implementations
+    logger/               # Logging system
+    lua/                  # Lua plugin engine
+    math/                 # Math utilities
+    nbt/                  # NBT serialization
+    network/              # Network layer
+    permission/           # Permission system
+    player/               # Player management
+    protocol/             # MCPE protocol (63 packet types)
+    raknet/               # RakNet implementation
+    scheduler/            # Task scheduler
+    server/               # Server core
+    world/                # World management
+  plugins/
+    example/              # Example Lua plugin
+  logs/                   # Server log output
 ```
 
 ---
 
-## 🔬 技术亮点
+## Technical Highlights
 
-### 混合真相模型 (Hybrid Truth Model)
+### Hybrid Truth Model
 
-为实现毫米级精度，项目采用双源验证：
+To achieve bit-level accuracy, the project employs dual-source verification:
 
-- **世界生成算法** → Minecraft Java 1.12.2 原版逻辑
-- **协议与物理** → SCAXE PHP (MCPE 0.14 分支)
+- **World Generation Algorithms** -- Minecraft Java 1.12.2 vanilla logic
+- **Protocol and Physics** -- SCAXE PHP (MCPE 0.14 branch)
 
-### 128 高度压缩策略 (Squash Strategy)
+### 128-Height Squash Strategy
 
-为适配 MCPE 0.14 的 128 格高度限制：
+Adapted for the MCPE 0.14 128-block height limit:
 
-| 参数       | 原版 (256h)  | 压缩版 (128h)      |
-| ---------- | ------------ | ------------------ |
-| 噪声段 (Y) | 33           | 17                 |
-| StretchY   | 12.0         | 24.0               |
-| 基础高度   | base + noise | (base + noise) / 2 |
+| Parameter          | Vanilla (256h) | Squashed (128h)    |
+| ------------------ | -------------- | ------------------ |
+| Noise Segments (Y) | 33             | 17                 |
+| StretchY           | 12.0           | 24.0               |
+| Base Height        | base + noise   | (base + noise) / 2 |
 
-### 并发安全设计
+### Concurrency Safety
 
-- 完全无状态的区块生成
-- 局部缓冲区噪声生成
-- 线程安全的随机数实例
-
----
-
-## 📜 许可证
-
-本项目采用 GNU Affero General Public License v3.0 (AGPL-3.0) 许可证。
+- Fully stateless chunk generation
+- Local buffer noise generation
+- Thread-safe random number instances
 
 ---
 
-## 🙏 致谢
+## License
 
-- Minecraft Java Edition 1.12.2 - 世界生成逻辑参考
-- SCAXE PHP / PocketMine-MP - MCPE 协议参考
-- Go 社区 - 优秀的工具链支持
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+---
+
+## Acknowledgments
+
+- Minecraft Java Edition 1.12.2 - World generation logic reference
+- SCAXE PHP / PocketMine-MP - MCPE protocol reference
+- Go Community - Excellent toolchain support
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by SCAXE Team**
+**Made by SCAXE Team**
 
 </div>
