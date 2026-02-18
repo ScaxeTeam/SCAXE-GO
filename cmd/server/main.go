@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"syscall"
 
+	"github.com/scaxe/scaxe-go/internal/eula"
 	"github.com/scaxe/scaxe-go/internal/version"
 	"github.com/scaxe/scaxe-go/pkg/config"
 
@@ -48,6 +49,10 @@ func main() {
 	if *showHelp {
 		printHelp()
 		os.Exit(0)
+	}
+
+	if !eula.Check() {
+		os.Exit(1)
 	}
 
 	logger.Init(os.Stdout, *debug)
