@@ -31,9 +31,12 @@ const (
 	BED_BLOCK                     = 26
 	POWERED_RAIL                  = 27
 	DETECTOR_RAIL                 = 28
+	STICKY_PISTON                 = 29
 	COBWEB                        = 30
 	TALL_GRASS                    = 31
 	DEAD_BUSH                     = 32
+	PISTON                        = 33
+	PISTON_HEAD                   = 34
 	WOOL                          = 35
 	DANDELION                     = 37
 	RED_FLOWER                    = 38
@@ -116,8 +119,10 @@ const (
 	ENCHANTING_TABLE              = 116
 	BREWING_STAND_BLOCK           = 117
 	CAULDRON_BLOCK                = 118
+	END_PORTAL                    = 119
 	END_PORTAL_FRAME              = 120
 	END_STONE                     = 121
+	DRAGON_EGG                    = 122
 	INACTIVE_REDSTONE_LAMP        = 123
 	ACTIVE_REDSTONE_LAMP          = 124
 	DROPPER                       = 125
@@ -181,9 +186,12 @@ const (
 	DARK_OAK_DOOR_BLOCK           = 197
 	GRASS_PATH                    = 198
 	ITEM_FRAME_BLOCK              = 199
+	CAMERA                        = 242
 	PODZOL                        = 243
 	BEETROOT_BLOCK                = 244
 	STONECUTTER                   = 245
 	GLOWING_OBSIDIAN              = 246
+	STAINED_GLASS                 = 241
+	STAINED_GLASS_PANE            = 160
 	NETHER_REACTOR                = 247
 )

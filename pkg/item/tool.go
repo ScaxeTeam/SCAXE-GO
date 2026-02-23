@@ -1,5 +1,11 @@
 package item
 
+import (
+	"math/rand"
+
+	"github.com/scaxe/scaxe-go/pkg/nbt"
+)
+
 const (
 	ToolTypeNone    = 0
 	ToolTypeSword   = 1
@@ -18,6 +24,13 @@ const (
 	TierIron    = 4
 	TierDiamond = 5
 )
+
+const (
+	UseTypeBreak    = 1
+	UseTypeActivate = 2
+)
+
+const BlockIDCobweb = 30
 
 var TierDurability = map[int]int{
 	TierWooden:  60,
@@ -51,7 +64,11 @@ func GetToolInfo(id int) *ToolInfo {
 
 func IsTool(id int) bool {
 	_, ok := toolData[id]
-	return ok
+	if ok {
+		return true
+	}
+
+	return id == FLINT_AND_STEEL || id == FISHING_ROD
 }
 
 func GetToolType(id int) int {
@@ -88,6 +105,27 @@ func GetMaxDurability(id int) int {
 	return 0
 }
 
+func GetBlockToolType(id int) int {
+	info := GetToolInfo(id)
+	if info == nil {
+		return ToolTypeNone
+	}
+	switch info.ToolType {
+	case ToolTypePickaxe:
+		return ToolTypePickaxe
+	case ToolTypeAxe:
+		return ToolTypeAxe
+	case ToolTypeSword:
+		return ToolTypeSword
+	case ToolTypeShovel:
+		return ToolTypeShovel
+	case ToolTypeShears:
+		return ToolTypeShears
+	default:
+		return ToolTypeNone
+	}
+}
+
 func GetMiningEfficiency(id int) float64 {
 	if info := GetToolInfo(id); info != nil {
 		if eff, ok := TierEfficiency[info.Tier]; ok {
@@ -95,6 +133,190 @@ func GetMiningEfficiency(id int) float64 {
 		}
 	}
 	return 1.0
+}
+
+func GetMiningEfficiencyFor(toolID int, blockToolType int, blockID int, enchantEfficiency int) float64 {
+	efficiency := 1.0
+
+	myToolType := GetBlockToolType(toolID)
+
+	if blockToolType != ToolTypeNone && myToolType == blockToolType {
+		efficiency = GetMiningEfficiency(toolID)
+
+		if enchantEfficiency > 0 {
+			efficiency += float64(enchantEfficiency*enchantEfficiency+1) * 2
+		}
+	}
+
+	if GetToolType(toolID) == ToolTypeSword {
+		efficiency *= 1.5
+
+		if blockID == BlockIDCobweb {
+			efficiency *= 10
+		}
+	}
+
+	return efficiency
+}
+
+func IsUnbreakable(nbtData *nbt.CompoundTag) bool {
+	if nbtData == nil {
+		return false
+	}
+	tag := nbtData.GetCompound("")
+	if tag == nil {
+		tag = nbtData
+	}
+	val := tag.GetByte("Unbreakable")
+	return val > 0
+}
+
+func applyUnbreaking(enchantUnbreaking int) bool {
+	if enchantUnbreaking <= 0 {
+		return false
+	}
+	if enchantUnbreaking > 3 {
+		enchantUnbreaking = 3
+	}
+
+	return rand.Intn(enchantUnbreaking+1) != 0
+}
+
+type UseOnResult struct {
+	DamageIncrease int
+	IsBroken       bool
+}
+
+func UseOnBreakBlock(toolID int, currentDamage int, blockHardness float64, blockToolType int, nbtData *nbt.CompoundTag, enchantUnbreaking int) UseOnResult {
+
+	if IsUnbreakable(nbtData) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	if applyUnbreaking(enchantUnbreaking) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	info := GetToolInfo(toolID)
+	if info == nil {
+
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	increase := 0
+
+	switch info.ToolType {
+	case ToolTypeShears:
+
+		if blockToolType == ToolTypeShears {
+			increase = 1
+		}
+	case ToolTypeSword:
+
+		if blockHardness > 0 {
+			increase = 2
+		}
+	case ToolTypePickaxe, ToolTypeAxe, ToolTypeShovel:
+
+		if blockHardness > 0 {
+			increase = 1
+		}
+	case ToolTypeHoe:
+
+		increase = 0
+	}
+
+	maxDur := GetMaxDurability(toolID)
+	broken := maxDur > 0 && (currentDamage+increase) >= maxDur
+
+	return UseOnResult{DamageIncrease: increase, IsBroken: broken}
+}
+
+func UseOnAttackEntity(toolID int, currentDamage int, nbtData *nbt.CompoundTag, enchantUnbreaking int) UseOnResult {
+	if IsUnbreakable(nbtData) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	if applyUnbreaking(enchantUnbreaking) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	info := GetToolInfo(toolID)
+	if info == nil {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	increase := 0
+
+	switch info.ToolType {
+	case ToolTypeSword, ToolTypeHoe:
+
+		increase = 1
+	case ToolTypePickaxe, ToolTypeAxe, ToolTypeShovel:
+
+		increase = 2
+	case ToolTypeShears:
+
+		increase = 1
+	default:
+
+		increase = 0
+	}
+
+	maxDur := GetMaxDurability(toolID)
+	broken := maxDur > 0 && (currentDamage+increase) >= maxDur
+
+	return UseOnResult{DamageIncrease: increase, IsBroken: broken}
+}
+
+func UseOnActivate(toolID int, currentDamage int, nbtData *nbt.CompoundTag, enchantUnbreaking int) UseOnResult {
+	if IsUnbreakable(nbtData) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	if applyUnbreaking(enchantUnbreaking) {
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	increase := 0
+
+	toolType := GetToolType(toolID)
+	switch {
+	case toolType == ToolTypeHoe:
+		increase = 1
+	case toolType == ToolTypeShovel:
+		increase = 1
+	case toolID == FLINT_AND_STEEL:
+		increase = 1
+	default:
+
+		return UseOnResult{DamageIncrease: 0, IsBroken: false}
+	}
+
+	maxDur := GetMaxDurability(toolID)
+	broken := maxDur > 0 && (currentDamage+increase) >= maxDur
+
+	return UseOnResult{DamageIncrease: increase, IsBroken: broken}
+}
+
+func (i *Item) UseOn(useType int, isEntity bool, blockHardness float64, blockToolType int, enchantUnbreaking int) bool {
+	var result UseOnResult
+
+	switch useType {
+	case UseTypeActivate:
+		result = UseOnActivate(i.ID, i.Meta, i.NBTData, enchantUnbreaking)
+	case UseTypeBreak:
+		if isEntity {
+			result = UseOnAttackEntity(i.ID, i.Meta, i.NBTData, enchantUnbreaking)
+		} else {
+			result = UseOnBreakBlock(i.ID, i.Meta, blockHardness, blockToolType, i.NBTData, enchantUnbreaking)
+		}
+	default:
+		return false
+	}
+
+	i.Meta += result.DamageIncrease
+	return result.IsBroken
 }
 
 var toolData = map[int]ToolInfo{

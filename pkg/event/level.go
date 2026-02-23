@@ -129,3 +129,47 @@ func NewSpawnChangeEvent(levelName string, ox, oy, oz, nx, ny, nz float64) *Spaw
 func (e *SpawnChangeEvent) GetHandlers() *HandlerList {
 	return spawnChangeHandlers
 }
+
+type LevelInitEvent struct {
+	*LevelEvent
+}
+
+var levelInitHandlers = NewHandlerList()
+
+func NewLevelInitEvent(levelName string) *LevelInitEvent {
+	return &LevelInitEvent{
+		LevelEvent: NewLevelEvent("LevelInitEvent", levelName),
+	}
+}
+
+func (e *LevelInitEvent) GetHandlers() *HandlerList { return levelInitHandlers }
+
+type LevelSaveEvent struct {
+	*LevelEvent
+}
+
+var levelSaveHandlers = NewHandlerList()
+
+func NewLevelSaveEvent(levelName string) *LevelSaveEvent {
+	return &LevelSaveEvent{
+		LevelEvent: NewLevelEvent("LevelSaveEvent", levelName),
+	}
+}
+
+func (e *LevelSaveEvent) GetHandlers() *HandlerList { return levelSaveHandlers }
+
+type WeatherChangeEvent struct {
+	*LevelEvent
+	ToRain bool
+}
+
+var weatherChangeHandlers = NewHandlerList()
+
+func NewWeatherChangeEvent(levelName string, toRain bool) *WeatherChangeEvent {
+	return &WeatherChangeEvent{
+		LevelEvent: NewLevelEvent("WeatherChangeEvent", levelName),
+		ToRain:     toRain,
+	}
+}
+
+func (e *WeatherChangeEvent) GetHandlers() *HandlerList { return weatherChangeHandlers }

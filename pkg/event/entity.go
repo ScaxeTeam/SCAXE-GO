@@ -180,3 +180,476 @@ func NewEntityDespawnEvent(entityID int64) *EntityDespawnEvent {
 func (e *EntityDespawnEvent) GetHandlers() *HandlerList {
 	return entityDespawnHandlers
 }
+
+type EntityDamageByBlockEvent struct {
+	*EntityDamageEvent
+	BlockID   int
+	BlockMeta int
+}
+
+var entityDamageByBlockHandlers = NewHandlerList()
+
+func NewEntityDamageByBlockEvent(entityID int64, cause int, damage float64, blockID, blockMeta int) *EntityDamageByBlockEvent {
+	return &EntityDamageByBlockEvent{
+		EntityDamageEvent: NewEntityDamageEvent(entityID, cause, damage),
+		BlockID:           blockID,
+		BlockMeta:         blockMeta,
+	}
+}
+
+func (e *EntityDamageByBlockEvent) GetHandlers() *HandlerList { return entityDamageByBlockHandlers }
+
+type EntityDamageByChildEntityEvent struct {
+	*EntityDamageByEntityEvent
+	ChildEntityID int64
+}
+
+var entityDamageByChildEntityHandlers = NewHandlerList()
+
+func NewEntityDamageByChildEntityEvent(entityID, damagerID, childEntityID int64, cause int, damage float64) *EntityDamageByChildEntityEvent {
+	return &EntityDamageByChildEntityEvent{
+		EntityDamageByEntityEvent: NewEntityDamageByEntityEvent(entityID, damagerID, cause, damage),
+		ChildEntityID:             childEntityID,
+	}
+}
+
+func (e *EntityDamageByChildEntityEvent) GetHandlers() *HandlerList {
+	return entityDamageByChildEntityHandlers
+}
+
+type EntityCombustEvent struct {
+	*EntityEvent
+	Duration int
+}
+
+var entityCombustHandlers = NewHandlerList()
+
+func NewEntityCombustEvent(entityID int64, duration int) *EntityCombustEvent {
+	return &EntityCombustEvent{
+		EntityEvent: NewEntityEvent("EntityCombustEvent", entityID),
+		Duration:    duration,
+	}
+}
+
+func (e *EntityCombustEvent) GetHandlers() *HandlerList { return entityCombustHandlers }
+func (e *EntityCombustEvent) SetDuration(d int)         { e.Duration = d }
+
+type EntityCombustByBlockEvent struct {
+	*EntityCombustEvent
+	BlockID int
+}
+
+var entityCombustByBlockHandlers = NewHandlerList()
+
+func NewEntityCombustByBlockEvent(entityID int64, duration int, blockID int) *EntityCombustByBlockEvent {
+	return &EntityCombustByBlockEvent{
+		EntityCombustEvent: NewEntityCombustEvent(entityID, duration),
+		BlockID:            blockID,
+	}
+}
+
+func (e *EntityCombustByBlockEvent) GetHandlers() *HandlerList { return entityCombustByBlockHandlers }
+
+type EntityCombustByEntityEvent struct {
+	*EntityCombustEvent
+	CombusterID int64
+}
+
+var entityCombustByEntityHandlers = NewHandlerList()
+
+func NewEntityCombustByEntityEvent(entityID int64, duration int, combusterID int64) *EntityCombustByEntityEvent {
+	return &EntityCombustByEntityEvent{
+		EntityCombustEvent: NewEntityCombustEvent(entityID, duration),
+		CombusterID:        combusterID,
+	}
+}
+
+func (e *EntityCombustByEntityEvent) GetHandlers() *HandlerList { return entityCombustByEntityHandlers }
+
+type EntityExplodeEvent struct {
+	*EntityEvent
+	X, Y, Z   float64
+	Force     float64
+	BlockList [][3]int
+	Yield     float64
+}
+
+var entityExplodeHandlers = NewHandlerList()
+
+func NewEntityExplodeEvent(entityID int64, x, y, z, force, yield float64) *EntityExplodeEvent {
+	return &EntityExplodeEvent{
+		EntityEvent: NewEntityEvent("EntityExplodeEvent", entityID),
+		X:           x, Y: y, Z: z,
+		Force: force,
+		Yield: yield,
+	}
+}
+
+func (e *EntityExplodeEvent) GetHandlers() *HandlerList { return entityExplodeHandlers }
+func (e *EntityExplodeEvent) SetYield(y float64)        { e.Yield = y }
+
+type ExplosionPrimeEvent struct {
+	*EntityEvent
+	Force      float64
+	BlockBreak bool
+}
+
+var explosionPrimeHandlers = NewHandlerList()
+
+func NewExplosionPrimeEvent(entityID int64, force float64) *ExplosionPrimeEvent {
+	return &ExplosionPrimeEvent{
+		EntityEvent: NewEntityEvent("ExplosionPrimeEvent", entityID),
+		Force:       force,
+		BlockBreak:  true,
+	}
+}
+
+func (e *ExplosionPrimeEvent) GetHandlers() *HandlerList { return explosionPrimeHandlers }
+func (e *ExplosionPrimeEvent) SetForce(f float64)        { e.Force = f }
+
+const (
+	RegainEating       = 0
+	RegainEffect       = 1
+	RegainRegeneration = 2
+	RegainCustom       = 3
+)
+
+type EntityRegainHealthEvent struct {
+	*EntityEvent
+	Amount float64
+	Reason int
+}
+
+var entityRegainHealthHandlers = NewHandlerList()
+
+func NewEntityRegainHealthEvent(entityID int64, amount float64, reason int) *EntityRegainHealthEvent {
+	return &EntityRegainHealthEvent{
+		EntityEvent: NewEntityEvent("EntityRegainHealthEvent", entityID),
+		Amount:      amount,
+		Reason:      reason,
+	}
+}
+
+func (e *EntityRegainHealthEvent) GetHandlers() *HandlerList { return entityRegainHealthHandlers }
+func (e *EntityRegainHealthEvent) SetAmount(a float64)       { e.Amount = a }
+
+type EntityMotionEvent struct {
+	*EntityEvent
+	MotionX, MotionY, MotionZ float64
+}
+
+var entityMotionHandlers = NewHandlerList()
+
+func NewEntityMotionEvent(entityID int64, mx, my, mz float64) *EntityMotionEvent {
+	return &EntityMotionEvent{
+		EntityEvent: NewEntityEvent("EntityMotionEvent", entityID),
+		MotionX:     mx, MotionY: my, MotionZ: mz,
+	}
+}
+
+func (e *EntityMotionEvent) GetHandlers() *HandlerList { return entityMotionHandlers }
+
+type EntityTeleportEvent struct {
+	*EntityEvent
+	FromX, FromY, FromZ float64
+	ToX, ToY, ToZ       float64
+}
+
+var entityTeleportHandlers = NewHandlerList()
+
+func NewEntityTeleportEvent(entityID int64, fromX, fromY, fromZ, toX, toY, toZ float64) *EntityTeleportEvent {
+	return &EntityTeleportEvent{
+		EntityEvent: NewEntityEvent("EntityTeleportEvent", entityID),
+		FromX:       fromX, FromY: fromY, FromZ: fromZ,
+		ToX: toX, ToY: toY, ToZ: toZ,
+	}
+}
+
+func (e *EntityTeleportEvent) GetHandlers() *HandlerList { return entityTeleportHandlers }
+
+type EntityLevelChangeEvent struct {
+	*EntityEvent
+	OriginLevelName string
+	TargetLevelName string
+}
+
+var entityLevelChangeHandlers = NewHandlerList()
+
+func NewEntityLevelChangeEvent(entityID int64, originLevel, targetLevel string) *EntityLevelChangeEvent {
+	return &EntityLevelChangeEvent{
+		EntityEvent:     NewEntityEvent("EntityLevelChangeEvent", entityID),
+		OriginLevelName: originLevel,
+		TargetLevelName: targetLevel,
+	}
+}
+
+func (e *EntityLevelChangeEvent) GetHandlers() *HandlerList { return entityLevelChangeHandlers }
+
+type EntityShootBowEvent struct {
+	*EntityEvent
+	Force        float64
+	ProjectileID int64
+}
+
+var entityShootBowHandlers = NewHandlerList()
+
+func NewEntityShootBowEvent(entityID int64, force float64, projectileID int64) *EntityShootBowEvent {
+	return &EntityShootBowEvent{
+		EntityEvent:  NewEntityEvent("EntityShootBowEvent", entityID),
+		Force:        force,
+		ProjectileID: projectileID,
+	}
+}
+
+func (e *EntityShootBowEvent) GetHandlers() *HandlerList { return entityShootBowHandlers }
+
+type EntityArmorChangeEvent struct {
+	*EntityEvent
+	Slot      int
+	OldItemID int
+	NewItemID int
+}
+
+var entityArmorChangeHandlers = NewHandlerList()
+
+func NewEntityArmorChangeEvent(entityID int64, slot, oldItemID, newItemID int) *EntityArmorChangeEvent {
+	return &EntityArmorChangeEvent{
+		EntityEvent: NewEntityEvent("EntityArmorChangeEvent", entityID),
+		Slot:        slot,
+		OldItemID:   oldItemID,
+		NewItemID:   newItemID,
+	}
+}
+
+func (e *EntityArmorChangeEvent) GetHandlers() *HandlerList { return entityArmorChangeHandlers }
+
+type EntityEatEvent struct {
+	*EntityEvent
+	HealAmount     float64
+	SaturationGain float64
+}
+
+var entityEatHandlers = NewHandlerList()
+
+func NewEntityEatEvent(entityID int64, healAmount, saturationGain float64) *EntityEatEvent {
+	return &EntityEatEvent{
+		EntityEvent:    NewEntityEvent("EntityEatEvent", entityID),
+		HealAmount:     healAmount,
+		SaturationGain: saturationGain,
+	}
+}
+
+func (e *EntityEatEvent) GetHandlers() *HandlerList { return entityEatHandlers }
+
+type EntityEatBlockEvent struct {
+	*EntityEatEvent
+	BlockID   int
+	BlockMeta int
+}
+
+var entityEatBlockHandlers = NewHandlerList()
+
+func NewEntityEatBlockEvent(entityID int64, healAmount, saturationGain float64, blockID, blockMeta int) *EntityEatBlockEvent {
+	return &EntityEatBlockEvent{
+		EntityEatEvent: NewEntityEatEvent(entityID, healAmount, saturationGain),
+		BlockID:        blockID,
+		BlockMeta:      blockMeta,
+	}
+}
+
+func (e *EntityEatBlockEvent) GetHandlers() *HandlerList { return entityEatBlockHandlers }
+
+type EntityEatItemEvent struct {
+	*EntityEatEvent
+	ItemID   int
+	ItemMeta int
+}
+
+var entityEatItemHandlers = NewHandlerList()
+
+func NewEntityEatItemEvent(entityID int64, healAmount, saturationGain float64, itemID, itemMeta int) *EntityEatItemEvent {
+	return &EntityEatItemEvent{
+		EntityEatEvent: NewEntityEatEvent(entityID, healAmount, saturationGain),
+		ItemID:         itemID,
+		ItemMeta:       itemMeta,
+	}
+}
+
+func (e *EntityEatItemEvent) GetHandlers() *HandlerList { return entityEatItemHandlers }
+
+type EntityDrinkPotionEvent struct {
+	*EntityEvent
+	PotionID int
+}
+
+var entityDrinkPotionHandlers = NewHandlerList()
+
+func NewEntityDrinkPotionEvent(entityID int64, potionID int) *EntityDrinkPotionEvent {
+	return &EntityDrinkPotionEvent{
+		EntityEvent: NewEntityEvent("EntityDrinkPotionEvent", entityID),
+		PotionID:    potionID,
+	}
+}
+
+func (e *EntityDrinkPotionEvent) GetHandlers() *HandlerList { return entityDrinkPotionHandlers }
+
+type EntityInventoryChangeEvent struct {
+	*EntityEvent
+	Slot      int
+	OldItemID int
+	NewItemID int
+}
+
+var entityInventoryChangeHandlers = NewHandlerList()
+
+func NewEntityInventoryChangeEvent(entityID int64, slot, oldItemID, newItemID int) *EntityInventoryChangeEvent {
+	return &EntityInventoryChangeEvent{
+		EntityEvent: NewEntityEvent("EntityInventoryChangeEvent", entityID),
+		Slot:        slot,
+		OldItemID:   oldItemID,
+		NewItemID:   newItemID,
+	}
+}
+
+func (e *EntityInventoryChangeEvent) GetHandlers() *HandlerList { return entityInventoryChangeHandlers }
+
+type EntityBlockChangeEvent struct {
+	*EntityEvent
+	BlockX, BlockY, BlockZ int
+	OldBlockID             int
+	NewBlockID             int
+}
+
+var entityBlockChangeHandlers = NewHandlerList()
+
+func NewEntityBlockChangeEvent(entityID int64, bx, by, bz, oldBlockID, newBlockID int) *EntityBlockChangeEvent {
+	return &EntityBlockChangeEvent{
+		EntityEvent: NewEntityEvent("EntityBlockChangeEvent", entityID),
+		BlockX:      bx, BlockY: by, BlockZ: bz,
+		OldBlockID: oldBlockID,
+		NewBlockID: newBlockID,
+	}
+}
+
+func (e *EntityBlockChangeEvent) GetHandlers() *HandlerList { return entityBlockChangeHandlers }
+
+type EntityGenerateEvent struct {
+	*EntityEvent
+	X, Y, Z float64
+	Cause   int
+}
+
+const (
+	GenerateCauseNatural  = 0
+	GenerateCauseSpawner  = 1
+	GenerateCauseSpawnEgg = 2
+	GenerateCauseCommand  = 3
+)
+
+var entityGenerateHandlers = NewHandlerList()
+
+func NewEntityGenerateEvent(entityID int64, x, y, z float64, cause int) *EntityGenerateEvent {
+	return &EntityGenerateEvent{
+		EntityEvent: NewEntityEvent("EntityGenerateEvent", entityID),
+		X:           x, Y: y, Z: z,
+		Cause: cause,
+	}
+}
+
+func (e *EntityGenerateEvent) GetHandlers() *HandlerList { return entityGenerateHandlers }
+
+type ProjectileHitEvent struct {
+	*EntityEvent
+	HitEntityID int64
+}
+
+var projectileHitHandlers = NewHandlerList()
+
+func NewProjectileHitEvent(projectileID int64, hitEntityID int64) *ProjectileHitEvent {
+	return &ProjectileHitEvent{
+		EntityEvent: NewEntityEvent("ProjectileHitEvent", projectileID),
+		HitEntityID: hitEntityID,
+	}
+}
+
+func (e *ProjectileHitEvent) GetHandlers() *HandlerList { return projectileHitHandlers }
+
+type ProjectileLaunchEvent struct {
+	*EntityEvent
+	ShooterID int64
+}
+
+var projectileLaunchHandlers = NewHandlerList()
+
+func NewProjectileLaunchEvent(projectileID, shooterID int64) *ProjectileLaunchEvent {
+	return &ProjectileLaunchEvent{
+		EntityEvent: NewEntityEvent("ProjectileLaunchEvent", projectileID),
+		ShooterID:   shooterID,
+	}
+}
+
+func (e *ProjectileLaunchEvent) GetHandlers() *HandlerList { return projectileLaunchHandlers }
+
+type ItemSpawnEvent struct {
+	*EntityEvent
+}
+
+var itemSpawnHandlers = NewHandlerList()
+
+func NewItemSpawnEvent(entityID int64) *ItemSpawnEvent {
+	return &ItemSpawnEvent{EntityEvent: NewEntityEvent("ItemSpawnEvent", entityID)}
+}
+
+func (e *ItemSpawnEvent) GetHandlers() *HandlerList { return itemSpawnHandlers }
+
+type ItemDespawnEvent struct {
+	*EntityEvent
+}
+
+var itemDespawnHandlers = NewHandlerList()
+
+func NewItemDespawnEvent(entityID int64) *ItemDespawnEvent {
+	return &ItemDespawnEvent{EntityEvent: NewEntityEvent("ItemDespawnEvent", entityID)}
+}
+
+func (e *ItemDespawnEvent) GetHandlers() *HandlerList { return itemDespawnHandlers }
+
+type ItemMergeEvent struct {
+	*EntityEvent
+	TargetEntityID int64
+}
+
+var itemMergeHandlers = NewHandlerList()
+
+func NewItemMergeEvent(entityID, targetEntityID int64) *ItemMergeEvent {
+	return &ItemMergeEvent{
+		EntityEvent:    NewEntityEvent("ItemMergeEvent", entityID),
+		TargetEntityID: targetEntityID,
+	}
+}
+
+func (e *ItemMergeEvent) GetHandlers() *HandlerList { return itemMergeHandlers }
+
+const (
+	CreeperPowerCauseLightning = 0
+	CreeperPowerCauseSetOn     = 1
+	CreeperPowerCauseSetOff    = 2
+)
+
+type CreeperPowerEvent struct {
+	*EntityEvent
+	Cause       int
+	LightningID int64
+}
+
+var creeperPowerHandlers = NewHandlerList()
+
+func NewCreeperPowerEvent(entityID int64, cause int, lightningID int64) *CreeperPowerEvent {
+	return &CreeperPowerEvent{
+		EntityEvent: NewEntityEvent("CreeperPowerEvent", entityID),
+		Cause:       cause,
+		LightningID: lightningID,
+	}
+}
+
+func (e *CreeperPowerEvent) GetHandlers() *HandlerList { return creeperPowerHandlers }

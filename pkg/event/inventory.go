@@ -135,3 +135,35 @@ func NewFurnaceBurnEvent(bx, by, bz, fuelID, burnTime int) *FurnaceBurnEvent {
 func (e *FurnaceBurnEvent) GetHandlers() *HandlerList {
 	return furnaceBurnHandlers
 }
+
+type InventoryPickupItemEvent struct {
+	*InventoryEvent
+	ItemEntityID int64
+}
+
+var inventoryPickupItemHandlers = NewHandlerList()
+
+func NewInventoryPickupItemEvent(invType int, itemEntityID int64) *InventoryPickupItemEvent {
+	return &InventoryPickupItemEvent{
+		InventoryEvent: NewInventoryEvent("InventoryPickupItemEvent", invType),
+		ItemEntityID:   itemEntityID,
+	}
+}
+
+func (e *InventoryPickupItemEvent) GetHandlers() *HandlerList { return inventoryPickupItemHandlers }
+
+type InventoryPickupArrowEvent struct {
+	*InventoryEvent
+	ArrowEntityID int64
+}
+
+var inventoryPickupArrowHandlers = NewHandlerList()
+
+func NewInventoryPickupArrowEvent(invType int, arrowEntityID int64) *InventoryPickupArrowEvent {
+	return &InventoryPickupArrowEvent{
+		InventoryEvent: NewInventoryEvent("InventoryPickupArrowEvent", invType),
+		ArrowEntityID:  arrowEntityID,
+	}
+}
+
+func (e *InventoryPickupArrowEvent) GetHandlers() *HandlerList { return inventoryPickupArrowHandlers }

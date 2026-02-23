@@ -1,9 +1,12 @@
 package command
 
+import "github.com/scaxe/scaxe-go/pkg/event"
+
 type CommandSender interface {
 	SendMessage(message string)
 	GetName() string
 	IsOp() bool
+	HasPermission(name string) bool
 }
 
 type PlayerSender interface {
@@ -71,6 +74,22 @@ func (m *CommandMap) Dispatch(sender CommandSender, cmdLine string) bool {
 		return false
 	}
 
+	if ps, ok := sender.(PlayerSender); ok {
+		ppEvt := event.NewPlayerCommandPreprocessEvent(sender.GetName(), ps.GetEntityID(), cmdLine)
+		event.Call(ppEvt)
+		if ppEvt.IsCancelled() {
+			return true
+		}
+		cmdLine = ppEvt.GetMessage()
+	}
+
+	cmdEvt := event.NewCommandEvent(cmdLine, sender.GetName())
+	event.Call(cmdEvt)
+	if cmdEvt.IsCancelled() {
+		return true
+	}
+	cmdLine = cmdEvt.GetCommand()
+
 	var args []string
 	currentArg := ""
 	for _, char := range cmdLine {
@@ -96,7 +115,7 @@ func (m *CommandMap) Dispatch(sender CommandSender, cmdLine string) bool {
 	args = args[1:]
 
 	if cmd, ok := m.commands[label]; ok {
-		if cmd.GetPermission() != "" && !sender.IsOp() {
+		if cmd.GetPermission() != "" && !sender.HasPermission(cmd.GetPermission()) {
 			sender.SendMessage("§cYou do not have permission to use this command.")
 			return true
 		}

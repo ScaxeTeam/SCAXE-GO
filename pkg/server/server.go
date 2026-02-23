@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/command/defaults"
 	"github.com/scaxe/scaxe-go/pkg/config"
 	"github.com/scaxe/scaxe-go/pkg/entity"
+	"github.com/scaxe/scaxe-go/pkg/event"
 	"github.com/scaxe/scaxe-go/pkg/item"
 	"github.com/scaxe/scaxe-go/pkg/level"
 	"github.com/scaxe/scaxe-go/pkg/level/anvil"
@@ -22,6 +24,7 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/player"
 	"github.com/scaxe/scaxe-go/pkg/protocol"
 	"github.com/scaxe/scaxe-go/pkg/raknet"
+	"github.com/scaxe/scaxe-go/pkg/scheduler"
 )
 
 const (
@@ -85,6 +88,8 @@ func NewServer(cfg *config.ServerConfig) *Server {
 
 func (s *Server) Start() error {
 	logger.Server("Starting server", "address", s.Address)
+
+	permission.RegisterDefaultPermissions()
 
 	s.RakNet = raknet.NewServer(s.Address)
 
@@ -489,6 +494,7 @@ func (s *Server) tick() {
 			if p.IsSpawned() {
 				p.Tick(s.CurrentTick)
 				s.checkChunks(p)
+				s.checkNearEntities(p)
 			}
 		}()
 	}
@@ -505,6 +511,8 @@ func (s *Server) tick() {
 	}
 
 	s.flushPackets()
+
+	scheduler.GetGlobalScheduler().MainThreadHeartbeat(currentTick)
 }
 
 func (s *Server) handleConnect(session *raknet.Session) {
@@ -553,6 +561,9 @@ func (s *Server) UpdatePong() {
 
 func (s *Server) handlePlayerQuit(p *player.Player) {
 	username := p.Username
+
+	quitEvt := event.NewPlayerQuitEvent(username, p.GetEntityID(), username+" left the game", "disconnected")
+	event.Call(quitEvt)
 
 	s.mu.Lock()
 	delete(s.PlayersByName, username)
@@ -817,12 +828,18 @@ func (s *Server) handleText(p *player.Player, pkt *protocol.TextPacket) {
 		return
 	}
 
-	logger.Player("Chat", "player", p.Username, "message", pkt.Message)
+	chatEvt := event.NewPlayerChatEvent(p.Username, p.GetEntityID(), pkt.Message, nil)
+	event.Call(chatEvt)
+	if chatEvt.IsCancelled() {
+		return
+	}
+
+	logger.Player("Chat", "player", p.Username, "message", chatEvt.GetMessage())
 
 	broadcast := protocol.NewTextPacket()
 	broadcast.TextType = protocol.TextTypeChat
 	broadcast.SourceName = p.Username
-	broadcast.Message = pkt.Message
+	broadcast.Message = chatEvt.GetMessage()
 
 	s.mu.RLock()
 	for _, other := range s.PlayersByName {
@@ -914,6 +931,9 @@ func (s *Server) tryFirstSpawn(p *player.Player) {
 
 	logger.Player("First spawn", "player", p.Username, "chunks", p.GetLoadedChunkCount())
 
+	joinEvt := event.NewPlayerJoinEvent(p.Username, p.GetEntityID(), p.Username+" joined the game")
+	event.Call(joinEvt)
+
 	joinMsg := protocol.NewTextPacket()
 	joinMsg.TextType = protocol.TextTypeTranslation
 	joinMsg.Message = "multiplayer.player.joined"
@@ -970,6 +990,10 @@ func (s *Server) checkChunks(p *player.Player) {
 
 		for _, coord := range loadedCoords {
 			p.MarkChunkLoaded(coord[0], coord[1])
+
+			if chunk := s.Level.GetChunk(coord[0], coord[1], false); chunk != nil {
+				s.Level.SendChunkTiles(chunk, p)
+			}
 		}
 	}
 
@@ -988,6 +1012,24 @@ func (s *Server) checkChunks(p *player.Player) {
 }
 
 func (s *Server) handleMovePlayer(p *player.Player, pkt *protocol.MovePlayerPacket) {
+
+	moveEvt := event.NewPlayerMoveEvent(p.Username, p.GetEntityID(),
+		p.Position.X, p.Position.Y, p.Position.Z,
+		float64(pkt.X), float64(pkt.Y), float64(pkt.Z))
+	event.Call(moveEvt)
+	if moveEvt.IsCancelled() {
+
+		revertPk := protocol.NewMovePlayerPacket()
+		revertPk.EntityID = p.GetID()
+		revertPk.X = float32(p.Position.X)
+		revertPk.Y = float32(p.Position.Y) + 1.62
+		revertPk.Z = float32(p.Position.Z)
+		revertPk.Yaw = float32(p.Yaw)
+		revertPk.Pitch = float32(p.Pitch)
+		revertPk.Mode = 1
+		s.sendPacket(p, revertPk)
+		return
+	}
 
 	oldCX := int32(p.Position.X) >> 4
 	oldCZ := int32(p.Position.Z) >> 4
@@ -1039,6 +1081,16 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 		return
 	}
 
+	held := p.Inventory.GetItemInHand()
+	breakEvt := event.NewBlockBreakEvent(int(x), int(y), int(z), int(bid), int(meta), p.GetEntityID(), int(held.ID))
+	event.Call(breakEvt)
+	if breakEvt.IsCancelled() {
+
+		revertPk := protocol.NewUpdateBlockPacket(x, int32(y), z, bid, meta)
+		s.sendPacket(p, revertPk)
+		return
+	}
+
 	tool := item.NewItem(0, 0, 0)
 	drops := block.GetDrops(uint8(bid), uint8(meta), tool)
 
@@ -1048,12 +1100,7 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 
 	s.BroadcastPacket(upk)
 
-	levPk := protocol.NewLevelEventPacket()
-	levPk.EventID = 2001
-	levPk.X = float32(x) + 0.5
-	levPk.Y = float32(y) + 0.5
-	levPk.Z = float32(z) + 0.5
-	levPk.Data = int32(bid) | (int32(meta) << 12)
+	levPk := level.NewDestroyBlockParticle(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5, int(bid), int(meta))
 	s.BroadcastPacket(levPk)
 
 	if p.Gamemode == 0 {
@@ -1067,9 +1114,9 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 
 func (s *Server) dropItem(x, y, z float32, it item.Item) {
 
-	mx := float32(0.0)
+	mx := float32(rand.Float64()*0.2 - 0.1)
 	my := float32(0.2)
-	mz := float32(0.0)
+	mz := float32(rand.Float64()*0.2 - 0.1)
 
 	s.dropItemWithMotion(x, y, z, it, mx, my, mz, 10)
 }
@@ -1194,6 +1241,26 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 
 	if pkt.Face <= 5 {
 
+		clickedBid := s.Level.GetBlockId(pkt.X, pkt.Y, pkt.Z)
+		clickedMeta := s.Level.GetBlockData(pkt.X, pkt.Y, pkt.Z)
+
+		behavior := block.Registry.GetBehavior(clickedBid)
+		if behavior != nil && behavior.CanBeActivated() {
+			ctx := &block.BlockContext{
+				X:    int(pkt.X),
+				Y:    int(pkt.Y),
+				Z:    int(pkt.Z),
+				Meta: clickedMeta,
+				Face: int(pkt.Face),
+			}
+
+			if behavior.OnActivate(ctx, p.GetEntityID()) {
+
+				s.handleBlockActivation(p, clickedBid, clickedMeta, pkt.X, pkt.Y, pkt.Z)
+				return
+			}
+		}
+
 		tx, ty, tz := pkt.X, pkt.Y, pkt.Z
 		switch pkt.Face {
 		case 0:
@@ -1213,6 +1280,24 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 		held := p.Inventory.GetItemInHand()
 
 		if held.ID > 0 && held.ID < 256 {
+
+			replacedBid := s.Level.GetBlockId(tx, ty, tz)
+			replacedMeta := s.Level.GetBlockData(tx, ty, tz)
+
+			placeEvt := event.NewBlockPlaceEvent(
+				int(tx), int(ty), int(tz),
+				int(held.ID), int(held.Meta),
+				p.GetEntityID(),
+				int(held.ID),
+				int(replacedBid), int(replacedMeta),
+			)
+			event.Call(placeEvt)
+			if placeEvt.IsCancelled() {
+
+				revertPk := protocol.NewUpdateBlockPacket(tx, ty, tz, replacedBid, replacedMeta)
+				s.sendPacket(p, revertPk)
+				return
+			}
 
 			s.Level.SetBlock(tx, ty, tz, byte(held.ID), byte(held.Meta), false)
 
@@ -1243,6 +1328,263 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 	} else if pkt.Face == 0xff {
 
 		logger.Player("Used item in air", "player", p.Username, "item", pkt.Item.ID)
+	}
+}
+
+func (s *Server) handleBlockActivation(p *player.Player, bid, meta byte, x, y, z int32) {
+	var result block.ActivateResult
+
+	switch bid {
+
+	case block.WOOD_DOOR_BLOCK, block.IRON_DOOR_BLOCK,
+		block.SPRUCE_DOOR_BLOCK, block.BIRCH_DOOR_BLOCK,
+		block.JUNGLE_DOOR_BLOCK, block.ACACIA_DOOR_BLOCK,
+		block.DARK_OAK_DOOR_BLOCK:
+		result = block.DoorOnActivate(meta, int(x), int(y), int(z))
+
+	case block.TRAPDOOR:
+		result = block.TrapdoorOnActivate(meta)
+
+	case block.FENCE_GATE, block.FENCE_GATE_SPRUCE, block.FENCE_GATE_BIRCH,
+		block.FENCE_GATE_JUNGLE, block.FENCE_GATE_DARK_OAK, block.FENCE_GATE_ACACIA:
+		dir := int((p.Yaw+45)/90) & 3
+		result = block.FenceGateOnActivate(meta, dir)
+
+	case block.CHEST, block.TRAPPED_CHEST:
+		result = block.ChestOnActivate()
+
+	case block.FURNACE, block.BURNING_FURNACE:
+		result = block.FurnaceOnActivate()
+
+	case block.WORKBENCH:
+		result = block.CraftingTableOnActivate()
+
+	case block.HOPPER_BLOCK:
+		result = block.ActivateResult{
+			Handled:       true,
+			OpenInventory: true,
+			InventoryType: block.InventoryTypeChest,
+		}
+
+	case block.DISPENSER, block.DROPPER:
+		result = block.ActivateResult{
+			Handled:       true,
+			OpenInventory: true,
+			InventoryType: block.InventoryTypeChest,
+		}
+
+	case block.BREWING_STAND_BLOCK:
+		result = block.ActivateResult{
+			Handled:       true,
+			OpenInventory: true,
+			InventoryType: block.InventoryTypeBrewingStand,
+		}
+
+	case block.CAKE_BLOCK:
+
+		if meta < 6 {
+			newMeta := meta + 1
+			if newMeta >= 6 {
+
+				result = block.ActivateResult{Handled: true}
+				s.Level.SetBlock(x, y, z, block.AIR, 0, false)
+				upk := protocol.NewUpdateBlockPacket(x, y, z, block.AIR, 0)
+				s.BroadcastPacket(upk)
+				return
+			}
+			result = block.ActivateResult{
+				Handled:    true,
+				NewMeta:    newMeta,
+				MetaChange: true,
+			}
+		} else {
+			return
+		}
+
+	case block.DAYLIGHT_SENSOR:
+
+		s.Level.SetBlock(x, y, z, block.DAYLIGHT_SENSOR_INVERTED, meta, false)
+		upk := protocol.NewUpdateBlockPacket(x, y, z, block.DAYLIGHT_SENSOR_INVERTED, meta)
+		s.BroadcastPacket(upk)
+		return
+	case block.DAYLIGHT_SENSOR_INVERTED:
+
+		s.Level.SetBlock(x, y, z, block.DAYLIGHT_SENSOR, meta, false)
+		upk := protocol.NewUpdateBlockPacket(x, y, z, block.DAYLIGHT_SENSOR, meta)
+		s.BroadcastPacket(upk)
+		return
+
+	case block.LEVER:
+		newMeta := meta ^ 0x08
+		result = block.ActivateResult{
+			Handled:    true,
+			NewMeta:    newMeta,
+			MetaChange: true,
+		}
+
+	case block.STONE_BUTTON, block.WOODEN_BUTTON:
+		newMeta := meta | 0x08
+		result = block.ActivateResult{
+			Handled:    true,
+			NewMeta:    newMeta,
+			MetaChange: true,
+		}
+
+	default:
+		return
+	}
+
+	if !result.Handled {
+		return
+	}
+
+	if result.MetaChange {
+		s.Level.SetBlock(x, y, z, bid, result.NewMeta, false)
+		updatePk := protocol.NewUpdateBlockPacket(x, y, z, bid, result.NewMeta)
+		s.BroadcastPacket(updatePk)
+	}
+
+	for _, pos := range result.SyncPositions {
+		sx, sy, sz := int32(pos[0]), int32(pos[1]), int32(pos[2])
+		syncBid := s.Level.GetBlockId(sx, sy, sz)
+		syncMeta := s.Level.GetBlockData(sx, sy, sz)
+
+		if isDoorBlock(syncBid) {
+			if !block.DoorIsTopHalf(syncMeta) {
+
+				newMeta := block.DoorToggleOpen(syncMeta)
+				s.Level.SetBlock(sx, sy, sz, syncBid, newMeta, false)
+				upk := protocol.NewUpdateBlockPacket(sx, sy, sz, syncBid, newMeta)
+				s.BroadcastPacket(upk)
+			} else {
+
+				upk := protocol.NewUpdateBlockPacket(sx, sy, sz, syncBid, syncMeta)
+				s.BroadcastPacket(upk)
+			}
+		}
+	}
+
+	if result.OpenInventory {
+		s.openContainerFor(p, result.InventoryType, x, y, z)
+	}
+
+	if result.PlaySound != "" {
+		soundPk := level.NewDoorSound(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5)
+		s.BroadcastPacket(soundPk)
+	}
+
+	if bid == block.LEVER || bid == block.STONE_BUTTON || bid == block.WOODEN_BUTTON {
+		clickPk := level.NewClickSound(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5, 1.0)
+		s.BroadcastPacket(clickPk)
+	}
+}
+
+func (s *Server) openContainerFor(p *player.Player, invType int, x, y, z int32) {
+
+	windowID := byte(2)
+
+	openPk := protocol.NewContainerOpenPacket()
+	openPk.WindowID = windowID
+	openPk.Type = byte(invType)
+	openPk.Slots = int16(s.getContainerSlotCount(invType))
+	openPk.X = x
+	openPk.Y = y
+	openPk.Z = z
+	s.sendPacket(p, openPk)
+
+	slotCount := int(openPk.Slots)
+	emptyItems := make([]item.Item, slotCount)
+	for i := range emptyItems {
+		emptyItems[i] = item.NewItem(0, 0, 0)
+	}
+	contentPk := protocol.NewContainerSetContentPacket(windowID, emptyItems)
+	s.sendPacket(p, contentPk)
+
+	logger.Player("Opened container", "player", p.Username,
+		"type", invType, "x", x, "y", y, "z", z)
+}
+
+func (s *Server) getContainerSlotCount(invType int) int {
+	switch invType {
+	case block.InventoryTypeChest:
+		return 27
+	case block.InventoryTypeCrafting:
+		return 9
+	case block.InventoryTypeFurnace:
+		return 3
+	case block.InventoryTypeEnchant:
+		return 2
+	case block.InventoryTypeAnvil:
+		return 3
+	case block.InventoryTypeBrewingStand:
+		return 4
+	default:
+		return 27
+	}
+}
+
+func isDoorBlock(id byte) bool {
+	switch id {
+	case block.WOOD_DOOR_BLOCK, block.IRON_DOOR_BLOCK,
+		block.SPRUCE_DOOR_BLOCK, block.BIRCH_DOOR_BLOCK,
+		block.JUNGLE_DOOR_BLOCK, block.ACACIA_DOOR_BLOCK,
+		block.DARK_OAK_DOOR_BLOCK:
+		return true
+	}
+	return false
+}
+
+func (s *Server) checkNearEntities(p *player.Player) {
+	if !p.IsAlive() || p.Position == nil {
+		return
+	}
+
+	px, py, pz := p.Position.X, p.Position.Y, p.Position.Z
+	searchBB := &entity.AxisAlignedBB{
+		MinX: px - 1.0,
+		MinY: py - 1.0,
+		MinZ: pz - 1.0,
+		MaxX: px + 1.0,
+		MaxY: py + 2.0,
+		MaxZ: pz + 1.0,
+	}
+
+	for _, e := range s.Level.GetNearbyEntities(searchBB, nil) {
+		itemEnt, ok := e.(*entity.ItemEntity)
+		if !ok || itemEnt.Closed {
+			continue
+		}
+
+		if itemEnt.PickupDelay > 0 {
+			continue
+		}
+
+		it := itemEnt.Item
+		if it.ID == 0 {
+			continue
+		}
+
+		if p.Gamemode == 0 && !p.Inventory.CanAddItem(it) {
+			continue
+		}
+
+		takePk := protocol.NewTakeItemEntityPacket()
+		takePk.EntityID = p.GetEntityID()
+		takePk.Target = itemEnt.GetID()
+		s.BroadcastPacket(takePk)
+
+		if p.Gamemode == 0 {
+			p.Inventory.AddItem(it)
+		}
+
+		s.syncInventory(p)
+
+		s.Level.RemoveEntity(itemEnt)
+		itemEnt.Close()
+
+		removePk := protocol.NewRemoveEntityPacket()
+		removePk.EntityID = itemEnt.GetID()
+		s.BroadcastPacket(removePk)
 	}
 }
 

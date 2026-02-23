@@ -5,10 +5,12 @@ import (
 
 	"github.com/scaxe/scaxe-go/pkg/block"
 	"github.com/scaxe/scaxe-go/pkg/entity"
+	"github.com/scaxe/scaxe-go/pkg/event"
 	"github.com/scaxe/scaxe-go/pkg/inventory"
 	"github.com/scaxe/scaxe-go/pkg/item"
 	"github.com/scaxe/scaxe-go/pkg/level"
 	"github.com/scaxe/scaxe-go/pkg/logger"
+	"github.com/scaxe/scaxe-go/pkg/permission"
 	"github.com/scaxe/scaxe-go/pkg/protocol"
 	"github.com/scaxe/scaxe-go/pkg/raknet"
 	"github.com/scaxe/scaxe-go/pkg/world"
@@ -49,8 +51,13 @@ type Player struct {
 
 	LastMoveTime int64
 	Ping         int
+	Difficulty   int
 
 	Inventory *inventory.PlayerInventory
+	windows   *InventoryWindows
+	movement  *MovementState
+	combat    *CombatState
+	survival  *SurvivalState
 }
 
 func NewPlayer(session *raknet.Session, ip string, port int) *Player {
@@ -75,9 +82,14 @@ func NewPlayer(session *raknet.Session, ip string, port int) *Player {
 		LastMoveTime:   0,
 		Ping:           0,
 		Inventory:      inventory.NewPlayerInventory(),
+		Difficulty:     1,
+		windows:        NewInventoryWindows(),
+		movement:       newMovementState(),
+		combat:         newCombatState(),
+		survival:       newSurvivalState(),
 	}
 
-	p.Inventory.OnSlotChange = func(slot int, it item.Item) {
+	p.Inventory.OnSlotChangeFunc = func(slot int, it item.Item) {
 
 		if !p.Spawned {
 			return
@@ -140,6 +152,10 @@ func (p *Player) IsOp() bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.Op
+}
+
+func (p *Player) HasPermission(name string) bool {
+	return permission.GlobalManager.HasPermission(name, p.IsOp())
 }
 
 func (p *Player) sendInventoryContents() {
@@ -233,6 +249,10 @@ func (p *Player) IsSpawned() bool {
 }
 
 func (p *Player) Close() {
+
+	quitEvt := event.NewPlayerQuitEvent(p.Username, p.GetID(), p.Username+" left the game", "disconnect")
+	event.Call(quitEvt)
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.Connected = false
@@ -281,6 +301,12 @@ func (p *Player) BroadcastArmorChange() {
 func (p *Player) Tick(currentTick int64) bool {
 	if !p.IsConnected() {
 		return false
+	}
+
+	if p.Spawned {
+		p.processMovement()
+		p.tickCombat()
+		p.tickSurvival()
 	}
 
 	p.checkNearEntities()
@@ -564,10 +590,18 @@ func (p *Player) DoFirstSpawn() {
 	pkMove.OnGround = true
 	p.SendPacket(pkMove)
 
+	joinEvt := event.NewPlayerJoinEvent(p.Username, p.GetID(), p.Username+" joined the game")
+	event.Call(joinEvt)
 }
 
 func (p *Player) Kick(message string, hideScreen bool) {
 	if !p.IsConnected() {
+		return
+	}
+
+	kickEvt := event.NewPlayerKickEvent(p.Username, p.GetID(), message)
+	event.Call(kickEvt)
+	if kickEvt.IsCancelled() {
 		return
 	}
 
@@ -580,17 +614,35 @@ func (p *Player) Kick(message string, hideScreen bool) {
 	p.Close()
 }
 
-func (p *Player) HandleLogin(username, uuid, skinName string, skinData []byte, protocol int32) {
+func (p *Player) HandleLogin(username, uuid, skinName string, skinData []byte, protocolVer int32) {
 	p.Username = username
 	p.UUID = uuid
 	p.SkinName = skinName
 	p.SkinData = string(skinData)
-	p.Protocol = protocol
+	p.Protocol = protocolVer
 	p.DisplayName = username
 	p.LoggedIn = true
+
+	loginEvt := event.NewPlayerLoginEvent(username, p.GetID())
+	event.Call(loginEvt)
+	if loginEvt.IsCancelled() {
+		if msg := loginEvt.GetKickMessage(); msg != "" {
+			p.Kick(msg, false)
+		} else {
+			p.Kick("Disconnected", false)
+		}
+	}
 }
 
 func (p *Player) HandleMove(x, y, z float64, yaw, bodyYaw, pitch float32, onGround bool) {
+
+	moveEvt := event.NewPlayerMoveEvent(p.Username, p.GetID(),
+		p.Position.X, p.Position.Y, p.Position.Z,
+		x, y, z)
+	event.Call(moveEvt)
+	if moveEvt.IsCancelled() {
+		return
+	}
 
 	p.mu.Lock()
 	p.Human.HandleMove(x, y, z, yaw, bodyYaw, pitch, onGround)
@@ -600,6 +652,7 @@ func (p *Player) HandleMove(x, y, z float64, yaw, bodyYaw, pitch float32, onGrou
 func (p *Player) HandleAction(action int32) {
 	switch action {
 	case ActionJump:
+		p.ExhaustFromJump()
 
 	case ActionStartSprint:
 		p.SetSprinting(true)
@@ -611,14 +664,6 @@ func (p *Player) HandleAction(action int32) {
 		p.SetSneaking(false)
 	case ActionRespawn:
 		p.handleRespawn()
-	}
-}
-
-func (p *Player) handleRespawn() {
-	if p.GetHealth() <= 0 {
-		p.SetHealth(p.GetMaxHealth())
-		p.SetFood(20)
-		p.SetSaturation(20)
 	}
 }
 

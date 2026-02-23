@@ -11,6 +11,7 @@ type Mob struct {
 
 	BehaviorManager *ai.BehaviorManager
 	Jumping         bool
+	levelAccess     ai.LevelAccess
 }
 
 func NewMob() *Mob {
@@ -47,7 +48,15 @@ func (m *Mob) Tick(currentTick int64) bool {
 		m.AttackTime--
 	}
 
-	m.BehaviorManager.Tick()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+
+				m.BehaviorManager.SetEnabled(false)
+			}
+		}()
+		m.BehaviorManager.Tick()
+	}()
 
 	if m.Jumping && m.OnGround {
 		m.Jump()
@@ -105,8 +114,7 @@ func (m *Mob) IsInsideOfWater() bool {
 }
 
 func (m *Mob) GetLevel() ai.LevelAccess {
-
-	return nil
+	return m.levelAccess
 }
 
 func (m *Mob) Move(dx, dy, dz float64) {
@@ -130,4 +138,8 @@ func (m *Mob) GetDirectionVector() (x, y, z float64) {
 
 func (m *Mob) IsOnGround() bool {
 	return m.OnGround
+}
+
+func (m *Mob) SetLevelAccess(la ai.LevelAccess) {
+	m.levelAccess = la
 }

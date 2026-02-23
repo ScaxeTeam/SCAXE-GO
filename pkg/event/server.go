@@ -139,3 +139,57 @@ func NewQueryRegenerateEvent(serverName, worldName string, online, max int) *Que
 func (e *QueryRegenerateEvent) GetHandlers() *HandlerList {
 	return queryRegenerateHandlers
 }
+
+type ServerCommandEvent struct {
+	*ServerEvent
+	Command string
+}
+
+var serverCommandHandlers = NewHandlerList()
+
+func NewServerCommandEvent(command string) *ServerCommandEvent {
+	return &ServerCommandEvent{
+		ServerEvent: NewServerEvent("ServerCommandEvent"),
+		Command:     command,
+	}
+}
+
+func (e *ServerCommandEvent) GetHandlers() *HandlerList { return serverCommandHandlers }
+func (e *ServerCommandEvent) GetCommand() string        { return e.Command }
+func (e *ServerCommandEvent) SetCommand(cmd string)     { e.Command = cmd }
+
+type RemoteServerCommandEvent struct {
+	*ServerCommandEvent
+}
+
+var remoteServerCommandHandlers = NewHandlerList()
+
+func NewRemoteServerCommandEvent(command string) *RemoteServerCommandEvent {
+	return &RemoteServerCommandEvent{
+		ServerCommandEvent: NewServerCommandEvent(command),
+	}
+}
+
+func (e *RemoteServerCommandEvent) GetHandlers() *HandlerList { return remoteServerCommandHandlers }
+
+type LowMemoryEvent struct {
+	*ServerEvent
+	Memory       int64
+	MemoryLimit  int64
+	TriggerCount int
+	Global       bool
+}
+
+var lowMemoryHandlers = NewHandlerList()
+
+func NewLowMemoryEvent(memory, memoryLimit int64, triggerCount int, global bool) *LowMemoryEvent {
+	return &LowMemoryEvent{
+		ServerEvent:  NewServerEvent("LowMemoryEvent"),
+		Memory:       memory,
+		MemoryLimit:  memoryLimit,
+		TriggerCount: triggerCount,
+		Global:       global,
+	}
+}
+
+func (e *LowMemoryEvent) GetHandlers() *HandlerList { return lowMemoryHandlers }

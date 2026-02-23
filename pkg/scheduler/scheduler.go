@@ -226,6 +226,8 @@ func (s *Scheduler) MainThreadHeartbeat(currentTick int64) {
 			delete(s.tasks, handler.GetTaskID())
 		}
 	}
+
+	GetAsyncPool().CollectTasks()
 }
 
 func (s *Scheduler) isReady(currentTick int64) bool {

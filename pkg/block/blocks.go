@@ -1,6 +1,7 @@
 package block
 
 type simpleBlock struct {
+	DefaultBlockInteraction
 	id              uint8
 	name            string
 	hardness        float64
@@ -37,6 +38,7 @@ func (b *simpleBlock) GetDrops(toolType, toolTier int) []Drop {
 }
 
 type transparentBlock struct {
+	DefaultBlockInteraction
 	id          uint8
 	name        string
 	hardness    float64
@@ -60,7 +62,7 @@ func (b *transparentBlock) GetDrops(toolType, toolTier int) []Drop {
 	return nil
 }
 
-type airBlock struct{}
+type airBlock struct{ DefaultBlockInteraction }
 
 func (b *airBlock) GetID() uint8                           { return AIR }
 func (b *airBlock) GetName() string                        { return "Air" }
@@ -86,7 +88,7 @@ const (
 	StonePolishedAndesite = 6
 )
 
-type stoneBlock struct{}
+type stoneBlock struct{ DefaultBlockInteraction }
 
 func (b *stoneBlock) GetID() uint8                { return STONE }
 func (b *stoneBlock) GetName() string             { return "Stone" }
@@ -108,7 +110,7 @@ func (b *stoneBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: COBBLESTONE, Meta: 0, Count: 1}}
 }
 
-type grassBlock struct{}
+type grassBlock struct{ DefaultBlockInteraction }
 
 func (b *grassBlock) GetID() uint8                { return GRASS }
 func (b *grassBlock) GetName() string             { return "Grass" }
@@ -127,7 +129,7 @@ func (b *grassBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: DIRT, Meta: 0, Count: 1}}
 }
 
-type dirtBlock struct{}
+type dirtBlock struct{ DefaultBlockInteraction }
 
 func (b *dirtBlock) GetID() uint8                { return DIRT }
 func (b *dirtBlock) GetName() string             { return "Dirt" }
@@ -146,6 +148,7 @@ func (b *dirtBlock) GetDrops(toolType, toolTier int) []Drop {
 }
 
 type liquidBlock struct {
+	DefaultBlockInteraction
 	id          uint8
 	name        string
 	lightFilter uint8
@@ -166,6 +169,7 @@ func (b *liquidBlock) GetToolTier() int                       { return 0 }
 func (b *liquidBlock) GetDrops(toolType, toolTier int) []Drop { return nil }
 
 type lavaBlock struct {
+	DefaultBlockInteraction
 	id   uint8
 	name string
 }
@@ -185,6 +189,7 @@ func (b *lavaBlock) GetToolTier() int                       { return 0 }
 func (b *lavaBlock) GetDrops(toolType, toolTier int) []Drop { return nil }
 
 type leavesBlock struct {
+	DefaultBlockInteraction
 	id   uint8
 	name string
 }
@@ -209,7 +214,7 @@ func (b *leavesBlock) GetDrops(toolType, toolTier int) []Drop {
 	return nil
 }
 
-type torchBlock struct{}
+type torchBlock struct{ DefaultBlockInteraction }
 
 func (b *torchBlock) GetID() uint8                { return TORCH }
 func (b *torchBlock) GetName() string             { return "Torch" }

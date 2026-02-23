@@ -48,6 +48,40 @@ type BlockBehavior interface {
 	GetToolTier() int
 
 	GetDrops(toolType, toolTier int) []Drop
+
+	Place(ctx *BlockContext) bool
+
+	OnBreak(ctx *BlockContext, toolType, toolTier int) bool
+
+	OnUpdate(ctx *BlockContext, updateType int) bool
+
+	OnActivate(ctx *BlockContext, playerID int64) bool
+
+	CanBeActivated() bool
+
+	IsBreakable(toolType, toolTier int) bool
+
+	GetBreakTime(toolType, toolTier int) float64
+
+	TickRate() int
+
+	GetFrictionFactor() float64
+
+	HasEntityCollision() bool
+
+	OnEntityCollide(ctx *BlockContext, entityID int64)
+
+	GetBurnChance() int
+
+	GetBurnAbility() int
+
+	CanPassThrough() bool
+
+	IsPowerSource() bool
+
+	GetStrongPower(face int) int
+
+	GetWeakPower(face int) int
 }
 
 var Registry = &blockRegistry{}
@@ -163,27 +197,17 @@ func (r *blockRegistry) registerVanillaBlocks() {
 	r.behaviors[AIR] = &airBlock{}
 
 	r.behaviors[STONE] = &stoneBlock{}
-	r.behaviors[GRASS] = &grassBlock{}
-	r.behaviors[DIRT] = &dirtBlock{}
+
 	r.behaviors[COBBLESTONE] = &simpleBlock{id: COBBLESTONE, name: "Cobblestone", hardness: 2.0}
 	r.behaviors[PLANKS] = &simpleBlock{id: PLANKS, name: "Planks", hardness: 2.0, blastResistance: 15}
 	r.behaviors[BEDROCK] = &simpleBlock{id: BEDROCK, name: "Bedrock", hardness: -1, blastResistance: 18000000}
-	r.behaviors[WATER] = &liquidBlock{id: WATER, name: "Water", lightFilter: 2}
-	r.behaviors[STILL_WATER] = &liquidBlock{id: STILL_WATER, name: "Still Water", lightFilter: 2}
-	r.behaviors[LAVA] = &lavaBlock{id: LAVA, name: "Lava"}
-	r.behaviors[STILL_LAVA] = &lavaBlock{id: STILL_LAVA, name: "Still Lava"}
-	r.behaviors[SAND] = &simpleBlock{id: SAND, name: "Sand", hardness: 0.5}
-	r.behaviors[GRAVEL] = &simpleBlock{id: GRAVEL, name: "Gravel", hardness: 0.6}
-	r.behaviors[GOLD_ORE] = &simpleBlock{id: GOLD_ORE, name: "Gold Ore", hardness: 3.0}
-	r.behaviors[IRON_ORE] = &simpleBlock{id: IRON_ORE, name: "Iron Ore", hardness: 3.0}
-	r.behaviors[COAL_ORE] = &simpleBlock{id: COAL_ORE, name: "Coal Ore", hardness: 3.0}
+
 	r.behaviors[WOOD] = &simpleBlock{id: WOOD, name: "Wood", hardness: 2.0}
 	r.behaviors[LEAVES] = &leavesBlock{id: LEAVES, name: "Leaves"}
-	r.behaviors[GLASS] = &transparentBlock{id: GLASS, name: "Glass", hardness: 0.3}
+
 	r.behaviors[OBSIDIAN] = &simpleBlock{id: OBSIDIAN, name: "Obsidian", hardness: 50.0, blastResistance: 6000}
 	r.behaviors[TORCH] = &torchBlock{}
 	r.behaviors[GLOWSTONE_BLOCK] = &simpleBlock{id: GLOWSTONE_BLOCK, name: "Glowstone", hardness: 0.3, lightLevel: 15}
-	r.behaviors[DIAMOND_ORE] = &simpleBlock{id: DIAMOND_ORE, name: "Diamond Ore", hardness: 3.0}
 	r.behaviors[DIAMOND_BLOCK] = &simpleBlock{id: DIAMOND_BLOCK, name: "Diamond Block", hardness: 5.0}
 	r.behaviors[GOLD_BLOCK] = &simpleBlock{id: GOLD_BLOCK, name: "Gold Block", hardness: 3.0}
 	r.behaviors[IRON_BLOCK] = &simpleBlock{id: IRON_BLOCK, name: "Iron Block", hardness: 5.0}

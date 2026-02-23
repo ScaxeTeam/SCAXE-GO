@@ -14,6 +14,9 @@ type Human struct {
 	Saturation float64
 	Exhaustion float64
 
+	FoodTickTimer int
+	FoodEnabled   bool
+
 	TotalXP    int
 	XPLevel    int
 	XPProgress float64
@@ -25,20 +28,22 @@ type Human struct {
 
 func NewHuman() *Human {
 	h := &Human{
-		Living:       NewLiving(),
-		UUID:         "",
-		Username:     "",
-		SkinData:     "",
-		SkinName:     "",
-		Food:         20,
-		MaxFood:      20,
-		Saturation:   20,
-		Exhaustion:   0,
-		TotalXP:      0,
-		XPLevel:      0,
-		XPProgress:   0,
-		Absorption:   0,
-		HeldItemSlot: 0,
+		Living:        NewLiving(),
+		UUID:          "",
+		Username:      "",
+		SkinData:      "",
+		SkinName:      "",
+		Food:          20,
+		MaxFood:       20,
+		Saturation:    20,
+		Exhaustion:    0,
+		FoodTickTimer: 0,
+		FoodEnabled:   true,
+		TotalXP:       0,
+		XPLevel:       0,
+		XPProgress:    0,
+		Absorption:    0,
+		HeldItemSlot:  0,
 	}
 	h.initHumanAttributes()
 	h.Height = 1.8

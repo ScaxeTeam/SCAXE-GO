@@ -129,3 +129,109 @@ func (e *SignChangeEvent) SetLine(index int, text string) {
 		e.Lines[index] = text
 	}
 }
+
+type BlockBurnEvent struct {
+	*BlockEvent
+}
+
+var blockBurnHandlers = NewHandlerList()
+
+func NewBlockBurnEvent(x, y, z, blockID, blockMeta int) *BlockBurnEvent {
+	return &BlockBurnEvent{
+		BlockEvent: NewBlockEvent("BlockBurnEvent", x, y, z, blockID, blockMeta),
+	}
+}
+
+func (e *BlockBurnEvent) GetHandlers() *HandlerList { return blockBurnHandlers }
+
+type BlockFormEvent struct {
+	*BlockEvent
+	NewBlockID   int
+	NewBlockMeta int
+}
+
+var blockFormHandlers = NewHandlerList()
+
+func NewBlockFormEvent(x, y, z, blockID, blockMeta, newBlockID, newBlockMeta int) *BlockFormEvent {
+	return &BlockFormEvent{
+		BlockEvent:   NewBlockEvent("BlockFormEvent", x, y, z, blockID, blockMeta),
+		NewBlockID:   newBlockID,
+		NewBlockMeta: newBlockMeta,
+	}
+}
+
+func (e *BlockFormEvent) GetHandlers() *HandlerList { return blockFormHandlers }
+
+type BlockGrowEvent struct {
+	*BlockEvent
+	NewBlockID   int
+	NewBlockMeta int
+}
+
+var blockGrowHandlers = NewHandlerList()
+
+func NewBlockGrowEvent(x, y, z, blockID, blockMeta, newBlockID, newBlockMeta int) *BlockGrowEvent {
+	return &BlockGrowEvent{
+		BlockEvent:   NewBlockEvent("BlockGrowEvent", x, y, z, blockID, blockMeta),
+		NewBlockID:   newBlockID,
+		NewBlockMeta: newBlockMeta,
+	}
+}
+
+func (e *BlockGrowEvent) GetHandlers() *HandlerList { return blockGrowHandlers }
+
+type BlockSpreadEvent struct {
+	*BlockEvent
+	SourceX, SourceY, SourceZ int
+	NewBlockID                int
+	NewBlockMeta              int
+}
+
+var blockSpreadHandlers = NewHandlerList()
+
+func NewBlockSpreadEvent(x, y, z, blockID, blockMeta, srcX, srcY, srcZ, newBlockID, newBlockMeta int) *BlockSpreadEvent {
+	return &BlockSpreadEvent{
+		BlockEvent:   NewBlockEvent("BlockSpreadEvent", x, y, z, blockID, blockMeta),
+		SourceX:      srcX,
+		SourceY:      srcY,
+		SourceZ:      srcZ,
+		NewBlockID:   newBlockID,
+		NewBlockMeta: newBlockMeta,
+	}
+}
+
+func (e *BlockSpreadEvent) GetHandlers() *HandlerList { return blockSpreadHandlers }
+
+type LeavesDecayEvent struct {
+	*BlockEvent
+}
+
+var leavesDecayHandlers = NewHandlerList()
+
+func NewLeavesDecayEvent(x, y, z, blockID, blockMeta int) *LeavesDecayEvent {
+	return &LeavesDecayEvent{
+		BlockEvent: NewBlockEvent("LeavesDecayEvent", x, y, z, blockID, blockMeta),
+	}
+}
+
+func (e *LeavesDecayEvent) GetHandlers() *HandlerList { return leavesDecayHandlers }
+
+type ItemFrameDropItemEvent struct {
+	*BlockEvent
+	PlayerID int64
+	ItemID   int
+	ItemMeta int
+}
+
+var itemFrameDropItemHandlers = NewHandlerList()
+
+func NewItemFrameDropItemEvent(x, y, z, blockID, blockMeta int, playerID int64, itemID, itemMeta int) *ItemFrameDropItemEvent {
+	return &ItemFrameDropItemEvent{
+		BlockEvent: NewBlockEvent("ItemFrameDropItemEvent", x, y, z, blockID, blockMeta),
+		PlayerID:   playerID,
+		ItemID:     itemID,
+		ItemMeta:   itemMeta,
+	}
+}
+
+func (e *ItemFrameDropItemEvent) GetHandlers() *HandlerList { return itemFrameDropItemHandlers }

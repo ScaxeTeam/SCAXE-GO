@@ -15,3 +15,7 @@ func (c *ConsoleCommandSender) GetName() string {
 func (c *ConsoleCommandSender) IsOp() bool {
 	return true
 }
+
+func (c *ConsoleCommandSender) HasPermission(name string) bool {
+	return true
+}

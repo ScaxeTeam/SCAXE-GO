@@ -8,6 +8,7 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/entity"
 	"github.com/scaxe/scaxe-go/pkg/level/generator"
 	"github.com/scaxe/scaxe-go/pkg/logger"
+	"github.com/scaxe/scaxe-go/pkg/tile"
 	"github.com/scaxe/scaxe-go/pkg/world"
 )
 
@@ -55,6 +56,9 @@ type Level struct {
 	Dimension int
 
 	Closed bool
+
+	tickState *TickState
+	Tiles     *tile.TileManager
 }
 
 var levelCounter int = 1
@@ -72,6 +76,8 @@ func NewLevel(name string, path string, provider Provider, generatorName string)
 		Dimension: DimensionNormal,
 		Closed:    false,
 		Seed:      12345,
+		tickState: NewTickState(),
+		Tiles:     tile.NewTileManager(),
 	}
 	levelCounter++
 
@@ -118,6 +124,9 @@ func (l *Level) GetChunk(x, z int32, generate bool) *world.Chunk {
 			}
 			l.Chunks[hash] = c
 			l.mu.Unlock()
+
+			l.loadTilesFromChunk(c)
+
 			return c
 		}
 	}
@@ -276,6 +285,8 @@ func (l *Level) SetBlock(x, y, z int32, id, meta byte, update bool) bool {
 		l.UpdateBlockLight(x, y-1, z, -1)
 		l.UpdateBlockLight(x, y, z+1, -1)
 		l.UpdateBlockLight(x, y, z-1, -1)
+
+		l.UpdateAround(x, y, z)
 	}
 
 	return true
@@ -359,6 +370,12 @@ func (l *Level) GetEntities() []entity.IEntity {
 	return entities
 }
 
+func (l *Level) GetEntityByID(id int64) entity.IEntity {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.Entities[id]
+}
+
 func (l *Level) GetNearbyEntities(bb *entity.AxisAlignedBB, except entity.IEntity) []entity.IEntity {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -432,6 +449,7 @@ func (l *Level) Tick() {
 			l.Time = 0
 		}
 	}
+	l.tickState.currentTick++
 
 	entities := make([]entity.IEntity, 0, len(l.Entities))
 	for _, e := range l.Entities {
@@ -440,13 +458,16 @@ func (l *Level) Tick() {
 	l.mu.Unlock()
 
 	for _, e := range entities {
-
 		if !e.Tick(l.Time) {
-
 			l.RemoveEntity(e)
 		}
 	}
 
+	l.processScheduledUpdates()
+
+	l.tickChunks()
+
+	l.Tiles.TickUpdates()
 }
 
 func (l *Level) Save() {
@@ -585,4 +606,54 @@ func (l *Level) GetSafeSpawn() *world.Vector3 {
 	logger.Info("GetSafeSpawn: result",
 		"spawnX", spawn.X, "spawnY", float64(safeY), "spawnZ", spawn.Z)
 	return world.NewVector3(spawn.X, float64(safeY), spawn.Z)
+}
+
+func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
+	if len(chunk.Tiles) == 0 {
+		return
+	}
+
+	loaded := 0
+	for _, tileNBT := range chunk.Tiles {
+		tileID := tileNBT.GetString("id")
+		if tileID == "" {
+			continue
+		}
+
+		t := tile.CreateTile(tileID, chunk, tileNBT)
+		if t == nil {
+			logger.Debug("Unknown tile entity type, skipping", "id", tileID,
+				"x", tileNBT.GetInt("x"), "y", tileNBT.GetInt("y"), "z", tileNBT.GetInt("z"))
+			continue
+		}
+
+		l.Tiles.AddTile(t)
+
+		if t.OnUpdate() {
+			l.Tiles.ScheduleUpdate(t)
+		}
+
+		loaded++
+	}
+
+	if loaded > 0 {
+		logger.Debug("Loaded tile entities from chunk",
+			"cx", chunk.X, "cz", chunk.Z, "count", loaded)
+	}
+}
+
+func (l *Level) SendChunkTiles(chunk *world.Chunk, sender tile.PacketSender) {
+	tiles := l.Tiles.GetAllTiles()
+	for _, t := range tiles {
+		x, y, z := t.GetPosition()
+		tileChunkX := x >> 4
+		tileChunkZ := z >> 4
+		_ = y
+
+		if tileChunkX == chunk.X && tileChunkZ == chunk.Z {
+			if spawnable, ok := t.(tile.Spawnable); ok {
+				tile.SpawnTo(spawnable, sender)
+			}
+		}
+	}
 }
