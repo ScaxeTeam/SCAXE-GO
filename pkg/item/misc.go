@@ -1,24 +1,13 @@
 package item
-
-// misc.go — 杂项物品属性和行为
-// 对应 PHP: Bucket, Compass, Clock, Book, Map, FlintSteel, Shears,
-//          Painting, Saddle, Fishing Rod, 各种材料等
-
-// ============ 物品分类 ============
-
-// MiscItemInfo 杂项物品的扩展属性
 type MiscItemInfo struct {
 	ID           int
 	Name         string
 	MaxStack     int
-	FuelTime     int  // 作为燃料的燃烧时间 (tick), 0 = 不可作燃料
-	IsPlaceable  bool // 是否可以放置为方块
-	PlaceBlockID int  // 放置后的方块 ID
+	FuelTime     int
+	IsPlaceable  bool
+	PlaceBlockID int
 }
-
-// miscItems 全部杂项物品属性表
 var miscItems = map[int]MiscItemInfo{
-	// ---------- 工具/功能性物品 ----------
 	BUCKET:          {ID: BUCKET, Name: "Bucket", MaxStack: 16},
 	FLINT_AND_STEEL: {ID: FLINT_AND_STEEL, Name: "Flint and Steel", MaxStack: 1},
 	COMPASS:         {ID: COMPASS, Name: "Compass", MaxStack: 64},
@@ -28,20 +17,14 @@ var miscItems = map[int]MiscItemInfo{
 	SADDLE:          {ID: SADDLE, Name: "Saddle", MaxStack: 1},
 	FILLED_MAP:      {ID: FILLED_MAP, Name: "Map", MaxStack: 64},
 	MAP:             {ID: MAP, Name: "Empty Map", MaxStack: 64},
-
-	// ---------- 可放置物品 ----------
 	PAINTING:   {ID: PAINTING, Name: "Painting", MaxStack: 64, IsPlaceable: true},
 	SIGN:       {ID: SIGN, Name: "Sign", MaxStack: 16, IsPlaceable: true, FuelTime: 200},
 	ITEM_FRAME: {ID: ITEM_FRAME, Name: "Item Frame", MaxStack: 64, IsPlaceable: true},
 	FLOWER_POT: {ID: FLOWER_POT, Name: "Flower Pot", MaxStack: 64, IsPlaceable: true},
 	BED:        {ID: BED, Name: "Bed", MaxStack: 1, IsPlaceable: true},
 	CAKE:       {ID: CAKE, Name: "Cake", MaxStack: 1, IsPlaceable: true},
-
-	// ---------- 书/附魔 ----------
 	BOOK:           {ID: BOOK, Name: "Book", MaxStack: 64},
 	ENCHANTED_BOOK: {ID: ENCHANTED_BOOK, Name: "Enchanted Book", MaxStack: 1},
-
-	// ---------- 矿车/船 ----------
 	MINECART:        {ID: MINECART, Name: "Minecart", MaxStack: 1},
 	CHEST_MINECART:  {ID: CHEST_MINECART, Name: "Chest Minecart", MaxStack: 1},
 	TNT_MINECART:    {ID: TNT_MINECART, Name: "TNT Minecart", MaxStack: 1},
@@ -52,8 +35,6 @@ var miscItems = map[int]MiscItemInfo{
 	JUNGLE_BOAT:     {ID: JUNGLE_BOAT, Name: "Jungle Boat", MaxStack: 1},
 	ACACIA_BOAT:     {ID: ACACIA_BOAT, Name: "Acacia Boat", MaxStack: 1},
 	DARK_OAK_BOAT:   {ID: DARK_OAK_BOAT, Name: "Dark Oak Boat", MaxStack: 1},
-
-	// ---------- 原材料/合成材料 ----------
 	COAL:          {ID: COAL, Name: "Coal", MaxStack: 64, FuelTime: 1600},
 	DIAMOND:       {ID: DIAMOND, Name: "Diamond", MaxStack: 64},
 	IRON_INGOT:    {ID: IRON_INGOT, Name: "Iron Ingot", MaxStack: 64},
@@ -74,13 +55,9 @@ var miscItems = map[int]MiscItemInfo{
 	GOLD_NUGGET:   {ID: GOLD_NUGGET, Name: "Gold Nugget", MaxStack: 64},
 	NETHER_QUARTZ: {ID: NETHER_QUARTZ, Name: "Nether Quartz", MaxStack: 64},
 	NETHER_BRICK:  {ID: NETHER_BRICK, Name: "Nether Brick", MaxStack: 64},
-
-	// ---------- 红石相关 ----------
 	REDSTONE:   {ID: REDSTONE, Name: "Redstone Dust", MaxStack: 64},
 	REPEATER:   {ID: REPEATER, Name: "Repeater", MaxStack: 64, IsPlaceable: true},
 	COMPARATOR: {ID: COMPARATOR, Name: "Comparator", MaxStack: 64, IsPlaceable: true},
-
-	// ---------- 门物品 ----------
 	WOODEN_DOOR:   {ID: WOODEN_DOOR, Name: "Oak Door", MaxStack: 64, IsPlaceable: true},
 	IRON_DOOR:     {ID: IRON_DOOR, Name: "Iron Door", MaxStack: 64, IsPlaceable: true},
 	SPRUCE_DOOR:   {ID: SPRUCE_DOOR, Name: "Spruce Door", MaxStack: 64, IsPlaceable: true},
@@ -88,8 +65,6 @@ var miscItems = map[int]MiscItemInfo{
 	JUNGLE_DOOR:   {ID: JUNGLE_DOOR, Name: "Jungle Door", MaxStack: 64, IsPlaceable: true},
 	ACACIA_DOOR:   {ID: ACACIA_DOOR, Name: "Acacia Door", MaxStack: 64, IsPlaceable: true},
 	DARK_OAK_DOOR: {ID: DARK_OAK_DOOR, Name: "Dark Oak Door", MaxStack: 64, IsPlaceable: true},
-
-	// ---------- 药水/酿造 ----------
 	GLASS_BOTTLE:         {ID: GLASS_BOTTLE, Name: "Glass Bottle", MaxStack: 64},
 	POTION:               {ID: POTION, Name: "Potion", MaxStack: 1},
 	SPLASH_POTION:        {ID: SPLASH_POTION, Name: "Splash Potion", MaxStack: 1},
@@ -102,34 +77,22 @@ var miscItems = map[int]MiscItemInfo{
 	GLOWSTONE_DUST:       {ID: GLOWSTONE_DUST, Name: "Glowstone Dust", MaxStack: 64},
 	GLISTERING_MELON:     {ID: GLISTERING_MELON, Name: "Glistering Melon", MaxStack: 64},
 	NETHER_WART:          {ID: NETHER_WART, Name: "Nether Wart", MaxStack: 64, IsPlaceable: true},
-
-	// ---------- 种子 ----------
 	SEEDS:          {ID: SEEDS, Name: "Wheat Seeds", MaxStack: 64, IsPlaceable: true},
 	PUMPKIN_SEEDS:  {ID: PUMPKIN_SEEDS, Name: "Pumpkin Seeds", MaxStack: 64, IsPlaceable: true},
 	MELON_SEEDS:    {ID: MELON_SEEDS, Name: "Melon Seeds", MaxStack: 64, IsPlaceable: true},
 	BEETROOT_SEEDS: {ID: BEETROOT_SEEDS, Name: "Beetroot Seeds", MaxStack: 64, IsPlaceable: true},
-
-	// ---------- 生物/杂项 ----------
 	SPAWN_EGG: {ID: SPAWN_EGG, Name: "Spawn Egg", MaxStack: 64},
 	EGG:       {ID: EGG, Name: "Egg", MaxStack: 16},
 	SNOWBALL:  {ID: SNOWBALL, Name: "Snowball", MaxStack: 16},
 	SUGARCANE: {ID: SUGARCANE, Name: "Sugar Cane", MaxStack: 64, IsPlaceable: true},
 	DYE:       {ID: DYE, Name: "Dye", MaxStack: 64},
 	MOB_HEAD:  {ID: MOB_HEAD, Name: "Mob Head", MaxStack: 64, IsPlaceable: true},
-
-	// ---------- 兔子系列 ----------
 	RABBIT_FOOT: {ID: RABBIT_FOOT, Name: "Rabbit's Foot", MaxStack: 64},
 	RABBIT_HIDE: {ID: RABBIT_HIDE, Name: "Rabbit Hide", MaxStack: 64},
-
-	// ---------- 酿造台/炼药锅物品 ----------
 	BREWING_STAND: {ID: BREWING_STAND, Name: "Brewing Stand", MaxStack: 64, IsPlaceable: true},
 	CAULDRON:      {ID: CAULDRON, Name: "Cauldron", MaxStack: 64, IsPlaceable: true},
 	HOPPER:        {ID: HOPPER, Name: "Hopper", MaxStack: 64, IsPlaceable: true},
 }
-
-// ============ 查询函数 ============
-
-// GetMiscItemInfo 获取杂项物品属性
 func GetMiscItemInfo(id int) *MiscItemInfo {
 	info, ok := miscItems[id]
 	if !ok {
@@ -137,17 +100,12 @@ func GetMiscItemInfo(id int) *MiscItemInfo {
 	}
 	return &info
 }
-
-// GetFuelTime 获取物品作为燃料的燃烧时间 (tick)
-// 返回 0 表示不可作燃料
 func GetFuelTime(id int) int {
 	if info, ok := miscItems[id]; ok && info.FuelTime > 0 {
 		return info.FuelTime
 	}
 	return 0
 }
-
-// IsMiscPlaceable 判断杂项物品是否可以放置为方块
 func IsMiscPlaceable(id int) bool {
 	if info, ok := miscItems[id]; ok {
 		return info.IsPlaceable
@@ -155,22 +113,18 @@ func IsMiscPlaceable(id int) bool {
 	return false
 }
 
-// ============ 桶类型常量 ============
-
 const (
 	BucketEmpty = 0
 	BucketMilk  = 1
 	BucketWater = 8
 	BucketLava  = 10
 )
-
-// BucketTypeToBlock 桶类型对应的方块 ID
 func BucketTypeToBlock(meta int) int {
 	switch meta {
 	case BucketWater:
-		return 8 // WATER
+		return 8
 	case BucketLava:
-		return 10 // LAVA
+		return 10
 	default:
 		return 0
 	}

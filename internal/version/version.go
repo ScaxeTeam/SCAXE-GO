@@ -7,9 +7,9 @@ const (
 
 	Minor = 3
 
-	Patch = 2
+	Patch = 6
 
-	Codename = "gorigional++"
+	Codename = "ai&redstone+"
 
 	MinecraftVersion = "0.14.3"
 

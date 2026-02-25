@@ -59,6 +59,14 @@ type Level struct {
 
 	tickState *TickState
 	Tiles     *tile.TileManager
+
+	PendingBlockUpdates []PendingBlockUpdate
+}
+
+type PendingBlockUpdate struct {
+	X, Y, Z int32
+	ID      uint8
+	Meta    uint8
 }
 
 var levelCounter int = 1
@@ -124,8 +132,6 @@ func (l *Level) GetChunk(x, z int32, generate bool) *world.Chunk {
 			}
 			l.Chunks[hash] = c
 			l.mu.Unlock()
-
-			// 从区块 NBT 恢复 Tile 实体（告示牌/箱子/熔炉等）
 			l.loadTilesFromChunk(c)
 
 			return c
@@ -286,8 +292,6 @@ func (l *Level) SetBlock(x, y, z int32, id, meta byte, update bool) bool {
 		l.UpdateBlockLight(x, y-1, z, -1)
 		l.UpdateBlockLight(x, y, z+1, -1)
 		l.UpdateBlockLight(x, y, z-1, -1)
-
-		// 通知6个相邻方块发生更新（对应 PHP Level::setBlock 中调用 updateAround）
 		l.UpdateAround(x, y, z)
 	}
 
@@ -337,6 +341,21 @@ func (l *Level) GetHeight(x, z int32) int32 {
 	}
 	return 0
 }
+func (l *Level) FindGroundY(x, z, startY int32) int32 {
+	if startY >= YMax {
+		startY = int32(YMax) - 1
+	}
+	if startY < 0 {
+		startY = 0
+	}
+	for y := startY; y >= 0; y-- {
+		bs := l.GetBlock(x, y, z)
+		if bs.ID != block.AIR {
+			return y + 1
+		}
+	}
+	return 0
+}
 
 func (l *Level) GetTime() int64 {
 	l.mu.RLock()
@@ -371,8 +390,6 @@ func (l *Level) GetEntities() []entity.IEntity {
 	}
 	return entities
 }
-
-// GetEntityByID 通过 ID 查找实体
 func (l *Level) GetEntityByID(id int64) entity.IEntity {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -417,15 +434,9 @@ func (l *Level) GetCollisionCubes(e entity.IEntity, bb *entity.AxisAlignedBB, in
 			for z := minZ; z <= maxZ; z++ {
 				blk := l.GetBlock(x, y, z)
 
-				if blk.ID != block.AIR && blk.ID != block.TALL_GRASS && blk.ID != block.DANDELION && blk.ID != block.RED_FLOWER {
-
-					blockBB := entity.NewAxisAlignedBB(
-						float64(x), float64(y), float64(z),
-						float64(x)+1, float64(y)+1, float64(z)+1,
-					)
-					if blockBB.IntersectsWith(bb) {
-						collisions = append(collisions, blockBB)
-					}
+				blockBB := getBlockCollisionBB(blk.ID, blk.Meta, x, y, z)
+				if blockBB != nil && blockBB.IntersectsWith(bb) {
+					collisions = append(collisions, blockBB)
 				}
 			}
 		}
@@ -443,6 +454,83 @@ func (l *Level) GetCollisionCubes(e entity.IEntity, bb *entity.AxisAlignedBB, in
 
 	return collisions
 }
+func getBlockCollisionBB(id, meta byte, x, y, z int32) *entity.AxisAlignedBB {
+	fx, fy, fz := float64(x), float64(y), float64(z)
+
+	switch id {
+	case block.AIR, block.TALL_GRASS, block.DEAD_BUSH, block.DANDELION, block.RED_FLOWER,
+		block.BROWN_MUSHROOM, block.RED_MUSHROOM, block.SAPLING,
+		block.TORCH, block.REDSTONE_TORCH, block.UNLIT_REDSTONE_TORCH,
+		block.REDSTONE_WIRE, block.SIGN_POST, block.WALL_SIGN,
+		block.SUGARCANE_BLOCK, block.FIRE, block.PORTAL,
+		block.WHEAT_BLOCK, block.CARROT_BLOCK, block.POTATO_BLOCK, block.BEETROOT_BLOCK,
+		block.MELON_STEM, block.PUMPKIN_STEM,
+		block.WATER, block.STILL_WATER, block.LAVA, block.STILL_LAVA,
+		block.RAIL, block.POWERED_RAIL, block.DETECTOR_RAIL, block.ACTIVATOR_RAIL,
+		block.LEVER, block.STONE_BUTTON, block.WOODEN_BUTTON,
+		block.TRIPWIRE, block.TRIPWIRE_HOOK,
+		block.VINE, block.WATER_LILY,
+		block.DOUBLE_PLANT, block.COBWEB,
+		block.LADDER, block.NETHER_WART_BLOCK,
+		block.STONE_PRESSURE_PLATE, block.WOODEN_PRESSURE_PLATE,
+		block.LIGHT_WEIGHTED_PRESSURE_PLATE, block.HEAVY_WEIGHTED_PRESSURE_PLATE:
+		return nil
+	case block.SLAB, block.WOOD_SLAB, block.RED_SANDSTONE_SLAB:
+		if meta&0x08 != 0 {
+			return entity.NewAxisAlignedBB(fx, fy+0.5, fz, fx+1, fy+1, fz+1)
+		}
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.5, fz+1)
+	case block.FENCE, block.NETHER_BRICK_FENCE:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+1.5, fz+1)
+	case block.STONE_WALL:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+1.5, fz+1)
+	case block.FENCE_GATE, block.FENCE_GATE_SPRUCE, block.FENCE_GATE_BIRCH,
+		block.FENCE_GATE_JUNGLE, block.FENCE_GATE_DARK_OAK, block.FENCE_GATE_ACACIA:
+		if meta&0x04 != 0 {
+			return nil
+		}
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+1.5, fz+1)
+	case block.CARPET:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.0625, fz+1)
+	case block.SNOW_LAYER:
+		layers := int(meta&0x07) + 1
+		h := float64(layers) * 0.125
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+h, fz+1)
+	case block.SOUL_SAND:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.875, fz+1)
+	case block.FARMLAND:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.9375, fz+1)
+	case block.ENCHANTING_TABLE:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.75, fz+1)
+	case block.CACTUS:
+		return entity.NewAxisAlignedBB(fx+0.0625, fy, fz+0.0625, fx+0.9375, fy+0.9375, fz+0.9375)
+	case block.BED_BLOCK:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.5625, fz+1)
+	case block.TRAPDOOR, block.IRON_TRAPDOOR:
+		if meta&0x04 != 0 {
+			return nil
+		}
+		if meta&0x08 != 0 {
+			return entity.NewAxisAlignedBB(fx, fy+0.8125, fz, fx+1, fy+1, fz+1)
+		}
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.1875, fz+1)
+	case block.GRASS_PATH:
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+0.9375, fz+1)
+	case block.WOOD_DOOR_BLOCK, block.IRON_DOOR_BLOCK,
+		block.SPRUCE_DOOR_BLOCK, block.BIRCH_DOOR_BLOCK,
+		block.JUNGLE_DOOR_BLOCK, block.ACACIA_DOOR_BLOCK, block.DARK_OAK_DOOR_BLOCK:
+		if meta&0x04 != 0 {
+			return nil
+		}
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+1, fz+1)
+
+	default:
+		if id == 0 {
+			return nil
+		}
+		return entity.NewAxisAlignedBB(fx, fy, fz, fx+1, fy+1, fz+1)
+	}
+}
 
 func (l *Level) Tick() {
 	l.mu.Lock()
@@ -459,23 +547,66 @@ func (l *Level) Tick() {
 		entities = append(entities, e)
 	}
 	l.mu.Unlock()
-
-	// 实体 tick
+	if len(entities) > 0 && l.tickState.currentTick%100 == 1 {
+		logger.Info("Level entity tick", "count", len(entities), "tick", l.tickState.currentTick)
+	}
 	for _, e := range entities {
 		if !e.Tick(l.Time) {
 			l.RemoveEntity(e)
 		}
 	}
-
-	// 计划方块更新（红石/液体等延迟更新）
 	l.processScheduledUpdates()
 
-	// 随机方块 tick（作物生长/草蔓延等）
+	l.tickPressurePlates()
+
 	l.tickChunks()
 
-	// Tile Entity tick（熔炉烧炼、酿造台等）
-	// 对应 PHP Level::actuallyDoTick() L738-751
 	l.Tiles.TickUpdates()
+}
+
+func (l *Level) tickPressurePlates() {
+	l.mu.RLock()
+	entities := make([]entity.IEntity, 0, len(l.Entities))
+	for _, e := range l.Entities {
+		entities = append(entities, e)
+	}
+	l.mu.RUnlock()
+
+	checked := make(map[int64]bool)
+	for _, e := range entities {
+		pos := e.GetPosition()
+		bx := int32(math.Floor(pos.X))
+		by := int32(math.Floor(pos.Y))
+		bz := int32(math.Floor(pos.Z))
+
+		hash := blockHash(bx, by, bz)
+		if checked[hash] {
+			continue
+		}
+		checked[hash] = true
+
+		bid := l.GetBlockId(bx, by, bz)
+		if !isPressurePlate(bid) {
+			continue
+		}
+
+		meta := l.GetBlockData(bx, by, bz)
+		if meta&0x01 == 0 {
+			l.SetBlock(bx, by, bz, bid, meta|0x01, false)
+			l.PendingBlockUpdates = append(l.PendingBlockUpdates, PendingBlockUpdate{
+				X: bx, Y: by, Z: bz, ID: bid, Meta: meta | 0x01,
+			})
+			l.UpdateAround(bx, by, bz)
+		}
+		l.ScheduleUpdate(bx, by, bz, 20)
+	}
+}
+
+func isPressurePlate(bid byte) bool {
+	return bid == block.STONE_PRESSURE_PLATE ||
+		bid == block.WOODEN_PRESSURE_PLATE ||
+		bid == block.LIGHT_WEIGHTED_PRESSURE_PLATE ||
+		bid == block.HEAVY_WEIGHTED_PRESSURE_PLATE
 }
 
 func (l *Level) Save() {
@@ -615,9 +746,6 @@ func (l *Level) GetSafeSpawn() *world.Vector3 {
 		"spawnX", spawn.X, "spawnY", float64(safeY), "spawnZ", spawn.Z)
 	return world.NewVector3(spawn.X, float64(safeY), spawn.Z)
 }
-
-// loadTilesFromChunk 从区块的 NBT 数据中恢复 Tile 实体
-// 对应 PHP Level::loadChunk() 中遍历 TileEntities 并 Tile::createTile() 的逻辑
 func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 	if len(chunk.Tiles) == 0 {
 		return
@@ -638,8 +766,6 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 		}
 
 		l.Tiles.AddTile(t)
-
-		// 如果 Tile 需要 tick 更新（如熔炉、刷怪笼），注册到更新队列
 		if t.OnUpdate() {
 			l.Tiles.ScheduleUpdate(t)
 		}
@@ -652,9 +778,6 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 			"cx", chunk.X, "cz", chunk.Z, "count", loaded)
 	}
 }
-
-// SendChunkTiles 向玩家发送指定区块中所有 Spawnable Tile 的数据
-// 在发送 FullChunkDataPacket 之后调用，让客户端渲染告示牌文字、箱子方向等
 func (l *Level) SendChunkTiles(chunk *world.Chunk, sender tile.PacketSender) {
 	tiles := l.Tiles.GetAllTiles()
 	for _, t := range tiles {

@@ -73,18 +73,14 @@ func (m *CommandMap) Dispatch(sender CommandSender, cmdLine string) bool {
 	if cmdLine == "" {
 		return false
 	}
-
-	// Fire PlayerCommandPreprocessEvent for player senders
 	if ps, ok := sender.(PlayerSender); ok {
 		ppEvt := event.NewPlayerCommandPreprocessEvent(sender.GetName(), ps.GetEntityID(), cmdLine)
 		event.Call(ppEvt)
 		if ppEvt.IsCancelled() {
 			return true
 		}
-		cmdLine = ppEvt.GetMessage() // allow plugins to modify the command
+		cmdLine = ppEvt.GetMessage()
 	}
-
-	// Fire CommandEvent
 	cmdEvt := event.NewCommandEvent(cmdLine, sender.GetName())
 	event.Call(cmdEvt)
 	if cmdEvt.IsCancelled() {

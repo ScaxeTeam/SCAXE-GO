@@ -4,20 +4,14 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/nbt"
 	"github.com/scaxe/scaxe-go/pkg/world"
 )
-
-// Cauldron 炼药锅 TileEntity
-// 对应 PHP class Cauldron extends Spawnable
 type Cauldron struct {
 	SpawnableBase
 }
-
-// NewCauldron 创建 Cauldron 实例
-// 对应 PHP Cauldron::__construct(FullChunk $chunk, CompoundTag $nbt)
 func NewCauldron(chunk *world.Chunk, nbtData *nbt.CompoundTag) *Cauldron {
 	c := &Cauldron{}
 
 	if nbtData.Get("PotionId") == nil {
-		nbtData.Set(nbt.NewShortTag("PotionId", -1)) // 0xffff as signed short
+		nbtData.Set(nbt.NewShortTag("PotionId", -1))
 	}
 	if nbtData.Get("SplashPotion") == nil {
 		nbtData.Set(nbt.NewByteTag("SplashPotion", 0))
@@ -29,33 +23,21 @@ func NewCauldron(chunk *world.Chunk, nbtData *nbt.CompoundTag) *Cauldron {
 	InitSpawnableBase(&c.SpawnableBase, TypeCauldron, chunk, nbtData)
 	return c
 }
-
-// GetName 返回名称
 func (c *Cauldron) GetName() string {
 	return "Cauldron"
 }
-
-// GetPotionId 获取药水 ID
 func (c *Cauldron) GetPotionId() int16 {
 	return c.NBT.GetShort("PotionId")
 }
-
-// SetPotionId 设置药水 ID
 func (c *Cauldron) SetPotionId(potionId int16) {
 	c.NBT.Set(nbt.NewShortTag("PotionId", potionId))
 }
-
-// HasPotion 是否含有药水
 func (c *Cauldron) HasPotion() bool {
-	return c.GetPotionId() != -1 // 0xffff
+	return c.GetPotionId() != -1
 }
-
-// GetSplashPotion 是否为喷溅药水
 func (c *Cauldron) GetSplashPotion() bool {
 	return c.NBT.GetByte("SplashPotion") != 0
 }
-
-// SetSplashPotion 设置是否为喷溅药水
 func (c *Cauldron) SetSplashPotion(splash bool) {
 	val := int8(0)
 	if splash {
@@ -63,13 +45,9 @@ func (c *Cauldron) SetSplashPotion(splash bool) {
 	}
 	c.NBT.Set(nbt.NewByteTag("SplashPotion", val))
 }
-
-// IsCustomColor 是否设置了自定义颜色
 func (c *Cauldron) IsCustomColor() bool {
 	return c.NBT.Get("CustomColor") != nil
 }
-
-// GetCustomColor 获取自定义颜色（返回 r, g, b）
 func (c *Cauldron) GetCustomColor() (r, g, b int) {
 	if !c.IsCustomColor() {
 		return 0, 0, 0
@@ -80,20 +58,13 @@ func (c *Cauldron) GetCustomColor() (r, g, b int) {
 	b = int(color & 0xFF)
 	return
 }
-
-// SetCustomColor 设置自定义颜色
 func (c *Cauldron) SetCustomColor(r, g, b int) {
 	color := int32((r&0xFF)<<16 | (g&0xFF)<<8 | (b & 0xFF))
 	c.NBT.Set(nbt.NewIntTag("CustomColor", color))
 }
-
-// ClearCustomColor 清除自定义颜色
 func (c *Cauldron) ClearCustomColor() {
 	c.NBT.Remove("CustomColor")
 }
-
-// GetSpawnCompound 返回发送给客户端的 NBT 数据
-// 对应 PHP Cauldron::getSpawnCompound()
 func (c *Cauldron) GetSpawnCompound() *nbt.CompoundTag {
 	compound := nbt.NewCompoundTag("")
 	compound.Set(nbt.NewStringTag("id", TypeCauldron))
@@ -107,33 +78,23 @@ func (c *Cauldron) GetSpawnCompound() *nbt.CompoundTag {
 		splashVal = 1
 	}
 	compound.Set(nbt.NewByteTag("SplashPotion", splashVal))
-
-	// Items 列表
 	if items := c.NBT.Get("Items"); items != nil {
 		compound.Set(items.Clone())
 	} else {
 		compound.Set(nbt.NewListTag("Items", nbt.TagCompound))
 	}
-
-	// 如果没有药水但有自定义颜色，则包含 CustomColor
 	if c.GetPotionId() == -1 && c.IsCustomColor() {
 		compound.Set(c.NBT.Get("CustomColor").Clone())
 	}
 
 	return compound
 }
-
-// UpdateCompoundTag 处理客户端发来的更新
 func (c *Cauldron) UpdateCompoundTag(nbtData *nbt.CompoundTag) bool {
 	return false
 }
-
-// SpawnTo 向指定玩家发送数据包
 func (c *Cauldron) SpawnTo(sender PacketSender) bool {
 	return SpawnTo(c, sender)
 }
-
-// SpawnToAll 向区块内所有玩家广播
 func (c *Cauldron) SpawnToAll(broadcaster ChunkBroadcaster) {
 	SpawnToAll(c, broadcaster)
 }

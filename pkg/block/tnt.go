@@ -1,9 +1,5 @@
 package block
 
-// ── TNT (ID 46) ─────────────────────────────────────────────────
-// Activated by flint & steel or redstone. Spawns PrimedTNT entity.
-// Burns easily: burnChance=15, burnAbility=100.
-
 type tntBlock struct{ DefaultBlockInteraction }
 
 func (b *tntBlock) GetID() uint8                { return TNT }
@@ -21,8 +17,6 @@ func (b *tntBlock) GetToolTier() int            { return 0 }
 func (b *tntBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(TNT), Meta: 0, Count: 1}}
 }
-
-// TNTBurnChance and TNTBurnAbility for fire spread calculations
 const (
 	TNTBurnChance  = 15
 	TNTBurnAbility = 100

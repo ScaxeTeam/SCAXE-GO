@@ -1,10 +1,12 @@
 package entity
 
 import (
+	"fmt"
 	_ "math"
 	"sync/atomic"
 
 	"github.com/scaxe/scaxe-go/pkg/block"
+	"github.com/scaxe/scaxe-go/pkg/logger"
 	"github.com/scaxe/scaxe-go/pkg/nbt"
 )
 
@@ -18,7 +20,9 @@ type IEntity interface {
 	GetPosition() *Vector3
 	GetYaw() float64
 	GetPitch() float64
+	GetEyeHeight() float64
 	HasMovementUpdate() bool
+	HasRotationUpdate() bool
 	GetBoundingBox() *AxisAlignedBB
 }
 
@@ -29,6 +33,7 @@ type ILevel interface {
 	GetEntities() []IEntity
 	AddEntity(e IEntity)
 	RemoveEntity(e IEntity)
+	FindGroundY(x, z, startY int32) int32
 }
 
 var entityIDCounter int64 = 1
@@ -73,10 +78,18 @@ type Entity struct {
 	Attributes *AttributeMap
 	NamedTag   *nbt.CompoundTag
 
-	Gravity float64
-	Drag    float64
+	Gravity       float64
+	Drag          float64
+	MovementSpeed float64
+	SlowFall      bool
+	YSize         float64
 
 	Level ILevel
+
+	Tasks      *AITasks
+	MoveHelper *MoveHelper
+	LookHelper *LookHelper
+	JumpHelper *JumpHelper
 }
 
 func NewEntity() *Entity {
@@ -96,6 +109,7 @@ func NewEntity() *Entity {
 		Width:         0.6,
 		Height:        1.8,
 		EyeHeight:     1.62,
+		MovementSpeed: 0.25,
 		StepHeight:    0.6,
 		Health:        20,
 		MaxHealth:     20,
@@ -172,6 +186,10 @@ func (e *Entity) GetPitch() float64 {
 	return e.Pitch
 }
 
+func (e *Entity) GetEyeHeight() float64 {
+	return e.EyeHeight
+}
+
 func (e *Entity) SetMotion(motion *Vector3) {
 	e.Motion = motion
 }
@@ -181,11 +199,104 @@ func (e *Entity) Tick(currentTick int64) bool {
 		return false
 	}
 	e.TicksLived++
+
+	e.LastPos.X = e.Position.X
+	e.LastPos.Y = e.Position.Y
+	e.LastPos.Z = e.Position.Z
+	e.LastYaw = e.Yaw
+	e.LastPitch = e.Pitch
+
+	if !e.OnGround && !e.IsInWater() {
+		e.Motion.Y -= e.Gravity
+		if e.SlowFall && e.Motion.Y < -0.08 {
+			e.Motion.Y = -0.08
+		}
+	}
+
+	e.UpdateAI()
+
+	moved := false
+	if e.Motion.X != 0 || e.Motion.Y != 0 || e.Motion.Z != 0 {
+		e.Move(e.Motion.X, e.Motion.Y, e.Motion.Z)
+		moved = true
+	}
+
+	if e.OnGround {
+		e.Motion.X *= 0.546
+		e.Motion.Z *= 0.546
+	}
+
+	if e.NoDamageTicks > 0 {
+		e.NoDamageTicks--
+	}
+
+	if e.NetworkID > 0 && e.TicksLived%20 == 1 {
+		activeGoals := 0
+		var goalNames string
+		if e.Tasks != nil {
+			for _, entry := range e.Tasks.executingEntries {
+				if entry.Using {
+					activeGoals++
+				}
+			}
+			goalNames = fmt.Sprintf("total=%d/exec=%d", len(e.Tasks.taskEntries), len(e.Tasks.executingEntries))
+		}
+		mhMoving := false
+		mhTarget := ""
+		if e.MoveHelper != nil {
+			mhMoving = e.MoveHelper.IsMoving
+			if mhMoving {
+				mhTarget = fmt.Sprintf("%.1f,%.1f,%.1f", e.MoveHelper.PosX, e.MoveHelper.PosY, e.MoveHelper.PosZ)
+			}
+		}
+		dx := e.Position.X - e.LastPos.X
+		dy := e.Position.Y - e.LastPos.Y
+		dz := e.Position.Z - e.LastPos.Z
+		logger.Info("AI-DEBUG",
+			"eid", e.ID, "nid", e.NetworkID, "tick", e.TicksLived,
+			"pos", fmt.Sprintf("%.2f,%.2f,%.2f", e.Position.X, e.Position.Y, e.Position.Z),
+			"delta", fmt.Sprintf("%.4f,%.4f,%.4f", dx, dy, dz),
+			"motion", fmt.Sprintf("%.4f,%.4f,%.4f", e.Motion.X, e.Motion.Y, e.Motion.Z),
+			"onGround", e.OnGround, "moved", moved,
+			"goals", fmt.Sprintf("%d(%s)", activeGoals, goalNames),
+			"mhMoving", mhMoving, "mhTarget", mhTarget, "level", e.Level != nil)
+	}
+
 	return true
 }
 
 func (e *Entity) Close() {
 	e.Closed = true
+}
+
+func (e *Entity) IsInWater() bool {
+	if e.Level == nil {
+		return false
+	}
+	feetBlock := e.Level.GetBlock(int32(e.Position.X), int32(e.Position.Y), int32(e.Position.Z))
+	return feetBlock.ID == 8 || feetBlock.ID == 9
+}
+
+func (e *Entity) InitAI() {
+	e.Tasks = NewAITasks()
+	e.MoveHelper = NewMoveHelper(e)
+	e.LookHelper = NewLookHelper(e)
+	e.JumpHelper = NewJumpHelper(e)
+}
+
+func (e *Entity) UpdateAI() {
+	if e.Tasks != nil {
+		e.Tasks.OnUpdateTasks()
+	}
+	if e.MoveHelper != nil {
+		e.MoveHelper.OnUpdateMoveHelper()
+	}
+	if e.LookHelper != nil {
+		e.LookHelper.OnUpdateLook()
+	}
+	if e.JumpHelper != nil {
+		e.JumpHelper.DoJump()
+	}
 }
 
 func (e *Entity) recalculateBoundingBox() {
@@ -283,6 +394,7 @@ func (e *Entity) Move(dx, dy, dz float64) bool {
 	wantedX := dx
 	wantedY := dy
 	wantedZ := dz
+	e.YSize *= 0.4
 
 	moveBB := e.BoundingBox.Clone()
 
@@ -294,6 +406,8 @@ func (e *Entity) Move(dx, dy, dz float64) bool {
 	}
 	moveBB = moveBB.Offset(0, dy, 0)
 
+	fallingFlag := e.OnGround || (dy != wantedY && wantedY < 0)
+
 	for _, bb := range list {
 		dx = bb.CalculateXOffset(moveBB, dx)
 	}
@@ -304,9 +418,53 @@ func (e *Entity) Move(dx, dy, dz float64) bool {
 	}
 	moveBB = moveBB.Offset(0, 0, dz)
 
+	if e.StepHeight > 0 && fallingFlag && (wantedX != dx || wantedZ != dz) {
+		cx := dx
+		cy := dy
+		cz := dz
+		dx = wantedX
+		dy = e.StepHeight
+		dz = wantedZ
+
+		stepBB := e.BoundingBox.Clone()
+		stepTargetBB := stepBB.AddCoord(dx, dy, dz)
+		stepList := e.Level.GetCollisionCubes(e, stepTargetBB, false)
+
+		for _, bb := range stepList {
+			dy = bb.CalculateYOffset(stepBB, dy)
+		}
+		stepBB = stepBB.Offset(0, dy, 0)
+
+		for _, bb := range stepList {
+			dx = bb.CalculateXOffset(stepBB, dx)
+		}
+		stepBB = stepBB.Offset(dx, 0, 0)
+
+		for _, bb := range stepList {
+			dz = bb.CalculateZOffset(stepBB, dz)
+		}
+		stepBB = stepBB.Offset(0, 0, dz)
+
+		reverseDY := -dy
+		for _, bb := range stepList {
+			reverseDY = bb.CalculateYOffset(stepBB, reverseDY)
+		}
+		dy += reverseDY
+		stepBB = stepBB.Offset(0, reverseDY, 0)
+
+		if (cx*cx + cz*cz) >= (dx*dx + dz*dz) {
+			dx = cx
+			dy = cy
+			dz = cz
+		} else {
+			moveBB = stepBB
+			e.YSize += 0.5
+		}
+	}
+
 	e.BoundingBox = moveBB
 	e.Position.X = (e.BoundingBox.MinX + e.BoundingBox.MaxX) / 2
-	e.Position.Y = e.BoundingBox.MinY
+	e.Position.Y = e.BoundingBox.MinY - e.YSize
 	e.Position.Z = (e.BoundingBox.MinZ + e.BoundingBox.MaxZ) / 2
 
 	e.checkBlockCollision()

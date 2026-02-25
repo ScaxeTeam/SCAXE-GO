@@ -456,21 +456,44 @@ func (s *Server) tick() {
 
 	if s.Level != nil {
 		s.Level.Tick()
+		if len(s.Level.PendingBlockUpdates) > 0 {
+			for _, upd := range s.Level.PendingBlockUpdates {
+				updPk := protocol.NewUpdateBlockPacket(upd.X, upd.Y, upd.Z, upd.ID, upd.Meta)
+				s.BroadcastPacket(updPk)
+			}
+			s.Level.PendingBlockUpdates = s.Level.PendingBlockUpdates[:0]
+		}
 
+		pk := protocol.NewMoveEntityPacket()
 		for _, e := range s.Level.GetEntities() {
-			if e.HasMovementUpdate() {
-
-				pk := protocol.NewMoveEntityPacket()
-				pk.EntityID = e.GetID()
+			hasMove := e.HasMovementUpdate()
+			hasRot := e.HasRotationUpdate()
+			if hasMove || hasRot {
 				pos := e.GetPosition()
-				pk.X = float32(pos.X)
-				pk.Y = float32(pos.Y)
-				pk.Z = float32(pos.Z)
-				pk.Yaw = float32(e.GetYaw())
-				pk.HeadYaw = float32(e.GetYaw())
-				pk.Pitch = float32(e.GetPitch())
+				entry := protocol.MoveEntityEntry{
+					EntityID: e.GetID(),
+					X:        float32(pos.X),
+					Y:        float32(pos.Y + e.GetEyeHeight()),
+					Z:        float32(pos.Z),
+					Yaw:      float32(e.GetYaw()),
+					HeadYaw:  float32(e.GetYaw()),
+					Pitch:    float32(e.GetPitch()),
+				}
+				pk.Entities = append(pk.Entities, entry)
 
-				s.BroadcastPacket(pk)
+				if s.CurrentTick%100 == 0 {
+					logger.Info("Entity broadcast",
+						"eid", e.GetID(), "hasMove", hasMove, "hasRot", hasRot,
+						"pos", fmt.Sprintf("%.2f,%.2f,%.2f", pos.X, pos.Y, pos.Z),
+						"sendY", fmt.Sprintf("%.2f", pos.Y+e.GetEyeHeight()))
+				}
+			}
+		}
+		if len(pk.Entities) > 0 {
+			for _, p := range s.GetOnlinePlayers() {
+				if p.Spawned {
+					s.sendPacket(p, pk)
+				}
 			}
 		}
 	}
@@ -508,8 +531,6 @@ func (s *Server) tick() {
 	}
 
 	s.flushPackets()
-
-	// 调度器心跳 + 异步任务收集 (对应 PHP Server::tick → scheduler->mainThreadHeartbeat)
 	scheduler.GetGlobalScheduler().MainThreadHeartbeat(currentTick)
 }
 
@@ -559,8 +580,6 @@ func (s *Server) UpdatePong() {
 
 func (s *Server) handlePlayerQuit(p *player.Player) {
 	username := p.Username
-
-	// 触发 PlayerQuitEvent
 	quitEvt := event.NewPlayerQuitEvent(username, p.GetEntityID(), username+" left the game", "disconnected")
 	event.Call(quitEvt)
 
@@ -837,8 +856,6 @@ func (s *Server) handleText(p *player.Player, pkt *protocol.TextPacket) {
 		p.SendMessage("Unknown command. Try /help type commands.")
 		return
 	}
-
-	// 触发 PlayerChatEvent，允许插件拦截/修改消息
 	chatEvt := event.NewPlayerChatEvent(p.Username, p.GetEntityID(), pkt.Message, nil)
 	event.Call(chatEvt)
 	if chatEvt.IsCancelled() {
@@ -937,8 +954,6 @@ func (s *Server) tryFirstSpawn(p *player.Player) {
 	}
 
 	logger.Player("First spawn", "player", p.Username, "chunks", p.GetLoadedChunkCount())
-
-	// 触发 PlayerJoinEvent
 	joinEvt := event.NewPlayerJoinEvent(p.Username, p.GetEntityID(), p.Username+" joined the game")
 	event.Call(joinEvt)
 
@@ -1041,14 +1056,11 @@ func (s *Server) checkChunks(p *player.Player) {
 }
 
 func (s *Server) handleMovePlayer(p *player.Player, pkt *protocol.MovePlayerPacket) {
-
-	// 触发 PlayerMoveEvent
 	moveEvt := event.NewPlayerMoveEvent(p.Username, p.GetEntityID(),
 		p.Position.X, p.Position.Y, p.Position.Z,
 		float64(pkt.X), float64(pkt.Y), float64(pkt.Z))
 	event.Call(moveEvt)
 	if moveEvt.IsCancelled() {
-		// 取消移动：将玩家传回原位
 		revertPk := protocol.NewMovePlayerPacket()
 		revertPk.EntityID = p.GetID()
 		revertPk.X = float32(p.Position.X)
@@ -1110,13 +1122,10 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 	if bid == 0 {
 		return
 	}
-
-	// 触发 BlockBreakEvent，允许插件拦截方块破坏
 	held := p.Inventory.GetItemInHand()
 	breakEvt := event.NewBlockBreakEvent(int(x), int(y), int(z), int(bid), int(meta), p.GetEntityID(), int(held.ID))
 	event.Call(breakEvt)
 	if breakEvt.IsCancelled() {
-		// 取消破坏：向玩家重新发送原方块数据
 		revertPk := protocol.NewUpdateBlockPacket(x, int32(y), z, bid, meta)
 		s.sendPacket(p, revertPk)
 		return
@@ -1131,7 +1140,7 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 
 	s.BroadcastPacket(upk)
 
-	// 使用 particle.go 的便利函数（激活 particle 系统）
+	s.Level.UpdateAround(x, y, z)
 	levPk := level.NewDestroyBlockParticle(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5, int(bid), int(meta))
 	s.BroadcastPacket(levPk)
 
@@ -1145,7 +1154,6 @@ func (s *Server) breakBlock(p *player.Player, x, y, z int32) {
 }
 
 func (s *Server) dropItem(x, y, z float32, it item.Item) {
-	// 对齐 PHP: motion = (rand*0.2-0.1, 0.2, rand*0.2-0.1)
 	mx := float32(rand.Float64()*0.2 - 0.1)
 	my := float32(0.2)
 	mz := float32(rand.Float64()*0.2 - 0.1)
@@ -1272,11 +1280,8 @@ func (s *Server) handleAnimate(p *player.Player, pkt *protocol.AnimatePacket) {
 func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 
 	if pkt.Face <= 5 {
-		// 获取被点击方块的信息
 		clickedBid := s.Level.GetBlockId(pkt.X, pkt.Y, pkt.Z)
 		clickedMeta := s.Level.GetBlockData(pkt.X, pkt.Y, pkt.Z)
-
-		// === 检查被点击方块是否可交互 ===
 		behavior := block.Registry.GetBehavior(clickedBid)
 		if behavior != nil && behavior.CanBeActivated() {
 			ctx := &block.BlockContext{
@@ -1288,13 +1293,10 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 			}
 
 			if behavior.OnActivate(ctx, p.GetEntityID()) {
-				// 方块处理了交互，根据方块类型执行具体逻辑
 				s.handleBlockActivation(p, clickedBid, clickedMeta, pkt.X, pkt.Y, pkt.Z)
 				return
 			}
 		}
-
-		// === 普通方块放置 ===
 		tx, ty, tz := pkt.X, pkt.Y, pkt.Z
 		switch pkt.Face {
 		case 0:
@@ -1313,12 +1315,19 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 
 		held := p.Inventory.GetItemInHand()
 
-		if held.ID > 0 && held.ID < 256 {
-			// 获取被替换位置的原方块
+		if held.ID == 383 {
+			s.handleSpawnEgg(p, int(held.Meta), float64(tx)+0.5, float64(ty), float64(tz)+0.5)
+			return
+		}
+		placeID := held.ID
+		switch held.ID {
+		case 331:
+			placeID = int(block.REDSTONE_WIRE)
+		}
+
+		if placeID > 0 && placeID < 256 {
 			replacedBid := s.Level.GetBlockId(tx, ty, tz)
 			replacedMeta := s.Level.GetBlockData(tx, ty, tz)
-
-			// 触发 BlockPlaceEvent
 			placeEvt := event.NewBlockPlaceEvent(
 				int(tx), int(ty), int(tz),
 				int(held.ID), int(held.Meta),
@@ -1328,18 +1337,52 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 			)
 			event.Call(placeEvt)
 			if placeEvt.IsCancelled() {
-				// 取消放置：向玩家发送原方块数据恢复
 				revertPk := protocol.NewUpdateBlockPacket(tx, ty, tz, replacedBid, replacedMeta)
 				s.sendPacket(p, revertPk)
 				return
 			}
+			placeMeta := byte(held.Meta)
+			switch byte(placeID) {
+			case block.LEVER, block.STONE_BUTTON, block.WOODEN_BUTTON:
+				switch pkt.Face {
+				case 0:
+					placeMeta = 0
+				case 1:
+					placeMeta = 5
+				case 2:
+					placeMeta = 4
+				case 3:
+					placeMeta = 3
+				case 4:
+					placeMeta = 2
+				case 5:
+					placeMeta = 1
+				}
+			case block.TORCH, block.REDSTONE_TORCH, block.UNLIT_REDSTONE_TORCH:
+				switch pkt.Face {
+				case 1:
+					placeMeta = 5
+				case 2:
+					placeMeta = 4
+				case 3:
+					placeMeta = 3
+				case 4:
+					placeMeta = 2
+				case 5:
+					placeMeta = 1
+				default:
+					placeMeta = 5
+				}
+			}
 
-			s.Level.SetBlock(tx, ty, tz, byte(held.ID), byte(held.Meta), false)
+			s.Level.SetBlock(tx, ty, tz, byte(placeID), placeMeta, false)
 
-			logger.Player("Placed block", "player", p.Username, "block", held.ID, "x", tx, "y", ty, "z", tz)
+			logger.Player("Placed block", "player", p.Username, "block", placeID, "x", tx, "y", ty, "z", tz)
 
-			updatePk := protocol.NewUpdateBlockPacket(tx, ty, tz, uint8(held.ID), uint8(held.Meta))
+			updatePk := protocol.NewUpdateBlockPacket(tx, ty, tz, uint8(placeID), placeMeta)
 			s.BroadcastPacket(updatePk)
+
+			s.Level.UpdateAround(tx, ty, tz)
 
 			if p.GetGamemode() == 0 {
 				held.Count--
@@ -1365,75 +1408,49 @@ func (s *Server) handleUseItem(p *player.Player, pkt *protocol.UseItemPacket) {
 		logger.Player("Used item in air", "player", p.Username, "item", pkt.Item.ID)
 	}
 }
-
-// handleBlockActivation 根据方块类型执行具体的交互逻辑
-// 门: 切换开/关状态 + 同步对半门
-// 箱子/熔炉/工作台: 打开容器背包
-// 活板门/栅栏门: 切换开/关状态
 func (s *Server) handleBlockActivation(p *player.Player, bid, meta byte, x, y, z int32) {
 	var result block.ActivateResult
 
 	switch bid {
-	// === 门 ===
 	case block.WOOD_DOOR_BLOCK, block.IRON_DOOR_BLOCK,
 		block.SPRUCE_DOOR_BLOCK, block.BIRCH_DOOR_BLOCK,
 		block.JUNGLE_DOOR_BLOCK, block.ACACIA_DOOR_BLOCK,
 		block.DARK_OAK_DOOR_BLOCK:
 		result = block.DoorOnActivate(meta, int(x), int(y), int(z))
-
-	// === 活板门 ===
 	case block.TRAPDOOR:
 		result = block.TrapdoorOnActivate(meta)
-
-	// === 栅栏门 ===
 	case block.FENCE_GATE, block.FENCE_GATE_SPRUCE, block.FENCE_GATE_BIRCH,
 		block.FENCE_GATE_JUNGLE, block.FENCE_GATE_DARK_OAK, block.FENCE_GATE_ACACIA:
 		dir := int((p.Yaw+45)/90) & 3
 		result = block.FenceGateOnActivate(meta, dir)
-
-	// === 箱子 ===
 	case block.CHEST, block.TRAPPED_CHEST:
 		result = block.ChestOnActivate()
-
-	// === 熔炉 ===
 	case block.FURNACE, block.BURNING_FURNACE:
 		result = block.FurnaceOnActivate()
-
-	// === 工作台 ===
 	case block.WORKBENCH:
 		result = block.CraftingTableOnActivate()
-
-	// === 漏斗 ===
 	case block.HOPPER_BLOCK:
 		result = block.ActivateResult{
 			Handled:       true,
 			OpenInventory: true,
-			InventoryType: block.InventoryTypeChest, // 漏斗使用箱子UI
+			InventoryType: block.InventoryTypeChest,
 		}
-
-	// === 发射器/投掷器 ===
 	case block.DISPENSER, block.DROPPER:
 		result = block.ActivateResult{
 			Handled:       true,
 			OpenInventory: true,
 			InventoryType: block.InventoryTypeChest,
 		}
-
-	// === 酿造台 ===
 	case block.BREWING_STAND_BLOCK:
 		result = block.ActivateResult{
 			Handled:       true,
 			OpenInventory: true,
 			InventoryType: block.InventoryTypeBrewingStand,
 		}
-
-	// === 蛋糕 ===
 	case block.CAKE_BLOCK:
-		// 每次右键吃一口，meta+1（最大6），meta=6 时消失
 		if meta < 6 {
 			newMeta := meta + 1
 			if newMeta >= 6 {
-				// 蛋糕吃完了，设为空气
 				result = block.ActivateResult{Handled: true}
 				s.Level.SetBlock(x, y, z, block.AIR, 0, false)
 				upk := protocol.NewUpdateBlockPacket(x, y, z, block.AIR, 0)
@@ -1448,39 +1465,36 @@ func (s *Server) handleBlockActivation(p *player.Player, bid, meta byte, x, y, z
 		} else {
 			return
 		}
-
-	// === 日光传感器 ===
 	case block.DAYLIGHT_SENSOR:
-		// 切换为反相日光传感器
 		s.Level.SetBlock(x, y, z, block.DAYLIGHT_SENSOR_INVERTED, meta, false)
 		upk := protocol.NewUpdateBlockPacket(x, y, z, block.DAYLIGHT_SENSOR_INVERTED, meta)
 		s.BroadcastPacket(upk)
 		return
 	case block.DAYLIGHT_SENSOR_INVERTED:
-		// 切换回正常日光传感器
 		s.Level.SetBlock(x, y, z, block.DAYLIGHT_SENSOR, meta, false)
 		upk := protocol.NewUpdateBlockPacket(x, y, z, block.DAYLIGHT_SENSOR, meta)
 		s.BroadcastPacket(upk)
 		return
-
-	// === 拉杆 ===
 	case block.LEVER:
-		newMeta := meta ^ 0x08 // 切换第4位
+		newMeta := meta ^ 0x08
 		result = block.ActivateResult{
 			Handled:    true,
 			NewMeta:    newMeta,
 			MetaChange: true,
 		}
-
-	// === 按钮 ===
 	case block.STONE_BUTTON, block.WOODEN_BUTTON:
-		newMeta := meta | 0x08 // 设置激活位
+		newMeta := meta | 0x08
 		result = block.ActivateResult{
 			Handled:    true,
 			NewMeta:    newMeta,
 			MetaChange: true,
 		}
-		// TODO: 安排延迟更新在 20 tick 后复位按钮
+		delay := 20
+		if bid == block.WOODEN_BUTTON {
+			delay = 30
+		}
+		logger.Info("Button pressed", "bid", bid, "oldMeta", meta, "newMeta", newMeta, "x", x, "y", y, "z", z, "delay", delay)
+		s.Level.ScheduleUpdate(x, y, z, delay)
 
 	default:
 		return
@@ -1489,59 +1503,41 @@ func (s *Server) handleBlockActivation(p *player.Player, bid, meta byte, x, y, z
 	if !result.Handled {
 		return
 	}
-
-	// 处理 meta 变更（门/活板门/栅栏门的开关）
 	if result.MetaChange {
 		s.Level.SetBlock(x, y, z, bid, result.NewMeta, false)
 		updatePk := protocol.NewUpdateBlockPacket(x, y, z, bid, result.NewMeta)
 		s.BroadcastPacket(updatePk)
+		s.Level.UpdateAround(x, y, z)
 	}
-
-	// 同步相邻方块（门的上下半同步）
 	for _, pos := range result.SyncPositions {
 		sx, sy, sz := int32(pos[0]), int32(pos[1]), int32(pos[2])
 		syncBid := s.Level.GetBlockId(sx, sy, sz)
 		syncMeta := s.Level.GetBlockData(sx, sy, sz)
-
-		// 对于门：如果是下半门被操作，上半门位置的方块需要重新发送
-		// 对于门：如果是上半门被操作，下半门需要切换开关
 		if isDoorBlock(syncBid) {
 			if !block.DoorIsTopHalf(syncMeta) {
-				// 同步位置是下半门：切换其开关状态
 				newMeta := block.DoorToggleOpen(syncMeta)
 				s.Level.SetBlock(sx, sy, sz, syncBid, newMeta, false)
 				upk := protocol.NewUpdateBlockPacket(sx, sy, sz, syncBid, newMeta)
 				s.BroadcastPacket(upk)
 			} else {
-				// 同步位置是上半门：重发数据即可
 				upk := protocol.NewUpdateBlockPacket(sx, sy, sz, syncBid, syncMeta)
 				s.BroadcastPacket(upk)
 			}
 		}
 	}
-
-	// 处理打开容器背包
 	if result.OpenInventory {
 		s.openContainerFor(p, result.InventoryType, x, y, z)
 	}
-
-	// 播放音效（使用 sound.go 便利函数）
 	if result.PlaySound != "" {
 		soundPk := level.NewDoorSound(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5)
 		s.BroadcastPacket(soundPk)
 	}
-
-	// 拉杆/按钮额外播放点击音效
 	if bid == block.LEVER || bid == block.STONE_BUTTON || bid == block.WOODEN_BUTTON {
 		clickPk := level.NewClickSound(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5, 1.0)
 		s.BroadcastPacket(clickPk)
 	}
 }
-
-// openContainerFor 向玩家打开指定类型的容器
-// 发送 ContainerOpenPacket + ContainerSetContentPacket
 func (s *Server) openContainerFor(p *player.Player, invType int, x, y, z int32) {
-	// 使用窗口ID 2（0=玩家背包, 1=盔甲, 2+ 可用）
 	windowID := byte(2)
 
 	openPk := protocol.NewContainerOpenPacket()
@@ -1552,8 +1548,6 @@ func (s *Server) openContainerFor(p *player.Player, invType int, x, y, z int32) 
 	openPk.Y = y
 	openPk.Z = z
 	s.sendPacket(p, openPk)
-
-	// 发空内容（实际内容由 Tile 的 Inventory 提供，暂时发空）
 	slotCount := int(openPk.Slots)
 	emptyItems := make([]item.Item, slotCount)
 	for i := range emptyItems {
@@ -1565,8 +1559,6 @@ func (s *Server) openContainerFor(p *player.Player, invType int, x, y, z int32) 
 	logger.Player("Opened container", "player", p.Username,
 		"type", invType, "x", x, "y", y, "z", z)
 }
-
-// getContainerSlotCount 返回容器类型对应的格数
 func (s *Server) getContainerSlotCount(invType int) int {
 	switch invType {
 	case block.InventoryTypeChest:
@@ -1585,8 +1577,6 @@ func (s *Server) getContainerSlotCount(invType int) int {
 		return 27
 	}
 }
-
-// isDoorBlock 判断方块 ID 是否为门方块
 func isDoorBlock(id byte) bool {
 	switch id {
 	case block.WOOD_DOOR_BLOCK, block.IRON_DOOR_BLOCK,
@@ -1597,22 +1587,17 @@ func isDoorBlock(id byte) bool {
 	}
 	return false
 }
-
-// checkNearEntities 检测玩家附近的可拾取物品
-// 对齐 PHP Player::checkNearEntities
 func (s *Server) checkNearEntities(p *player.Player) {
 	if !p.IsAlive() || p.Position == nil {
 		return
 	}
-
-	// 构建搜索范围：以玩家位置为中心，扩展 1.0 格
 	px, py, pz := p.Position.X, p.Position.Y, p.Position.Z
 	searchBB := &entity.AxisAlignedBB{
 		MinX: px - 1.0,
 		MinY: py - 1.0,
 		MinZ: pz - 1.0,
 		MaxX: px + 1.0,
-		MaxY: py + 2.0, // 玩家身高约 1.8
+		MaxY: py + 2.0,
 		MaxZ: pz + 1.0,
 	}
 
@@ -1630,32 +1615,19 @@ func (s *Server) checkNearEntities(p *player.Player) {
 		if it.ID == 0 {
 			continue
 		}
-
-		// 检查背包是否能放下
 		if p.Gamemode == 0 && !p.Inventory.CanAddItem(it) {
 			continue
 		}
-
-		// === 发送拾取动画包 ===
-		// 给其他玩家：EntityID=玩家ID, Target=掉落物ID
 		takePk := protocol.NewTakeItemEntityPacket()
 		takePk.EntityID = p.GetEntityID()
 		takePk.Target = itemEnt.GetID()
 		s.BroadcastPacket(takePk)
-
-		// 添加到背包
 		if p.Gamemode == 0 {
 			p.Inventory.AddItem(it)
 		}
-
-		// 同步背包给客户端
 		s.syncInventory(p)
-
-		// 从 Level 移除实体
 		s.Level.RemoveEntity(itemEnt)
 		itemEnt.Close()
-
-		// 广播移除实体包
 		removePk := protocol.NewRemoveEntityPacket()
 		removePk.EntityID = itemEnt.GetID()
 		s.BroadcastPacket(removePk)
@@ -1690,4 +1662,45 @@ func (s *Server) handleContainerSetSlot(p *player.Player, pkt *protocol.Containe
 		p.Inventory.SetItem(int(pkt.Slot), pkt.Item)
 		logger.Player("Container set slot", "player", p.Username, "slot", pkt.Slot, "item", pkt.Item.ID, "meta", pkt.Item.Meta, "count", pkt.Item.Count)
 	}
+}
+
+func (s *Server) handleSpawnEgg(p *player.Player, networkID int, x, y, z float64) {
+	var mob *entity.Animal
+
+	switch networkID {
+	case entity.CowNetworkID:
+		mob = entity.NewCow()
+	case entity.PigNetworkID:
+		mob = entity.NewPig()
+	case entity.SheepNetworkID:
+		mob = entity.NewSheep().Animal
+	case entity.ChickenNetworkID:
+		mob = entity.NewChicken().Animal
+	default:
+		logger.Player("Unknown spawn egg", "player", p.Username, "networkID", networkID)
+		return
+	}
+
+	mob.Entity.SetPosition(entity.NewVector3(x, y, z))
+	mob.Entity.Level = s.Level
+	mob.Entity.Yaw = float64(p.Yaw)
+
+	s.Level.AddEntity(mob.Entity)
+
+	pk := protocol.NewAddEntityPacket()
+	pk.EntityID = mob.Entity.GetID()
+	pk.Type = int32(mob.Entity.NetworkID)
+	pk.X = float32(x)
+	pk.Y = float32(y)
+	pk.Z = float32(z)
+	pk.Yaw = float32(mob.Entity.Yaw)
+	pk.Pitch = float32(mob.Entity.Pitch)
+	s.BroadcastPacket(pk)
+
+	logger.Player("Spawned mob", "player", p.Username, "type", mob.MobName, "networkID", networkID,
+		"pos", fmt.Sprintf("%.1f,%.1f,%.1f", x, y, z),
+		"entityID", mob.Entity.GetID(),
+		"bb", fmt.Sprintf("%.1f,%.1f,%.1f -> %.1f,%.1f,%.1f",
+			mob.Entity.BoundingBox.MinX, mob.Entity.BoundingBox.MinY, mob.Entity.BoundingBox.MinZ,
+			mob.Entity.BoundingBox.MaxX, mob.Entity.BoundingBox.MaxY, mob.Entity.BoundingBox.MaxZ))
 }

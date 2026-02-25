@@ -1,48 +1,35 @@
 package item
 
-// decorative.go — 装饰性物品
-// 染料子类型, 旗帜, 唱片, 盔甲架等
-
-// ============ 染料子类型 ============
-// DYE (351) 通过 meta 区分子类型
-
 const (
-	DyeInkSac          = 0  // 墨囊
-	DyeRoseRed         = 1  // 玫瑰红
-	DyeCactusGreen     = 2  // 仙人掌绿
-	DyeCocoaBeans      = 3  // 可可豆
-	DyeLapisLazuli     = 4  // 青金石
-	DyePurple          = 5  // 紫色染料
-	DyeCyan            = 6  // 青色染料
-	DyeLightGray       = 7  // 淡灰色染料
-	DyeGray            = 8  // 灰色染料
-	DyePink            = 9  // 粉红色染料
-	DyeLime            = 10 // 黄绿色染料
-	DyeDandelionYellow = 11 // 蒲公英黄
-	DyeLightBlue       = 12 // 淡蓝色染料
-	DyeMagenta         = 13 // 品红色染料
-	DyeOrange          = 14 // 橙色染料
-	DyeBoneMeal        = 15 // 骨粉
+	DyeInkSac          = 0
+	DyeRoseRed         = 1
+	DyeCactusGreen     = 2
+	DyeCocoaBeans      = 3
+	DyeLapisLazuli     = 4
+	DyePurple          = 5
+	DyeCyan            = 6
+	DyeLightGray       = 7
+	DyeGray            = 8
+	DyePink            = 9
+	DyeLime            = 10
+	DyeDandelionYellow = 11
+	DyeLightBlue       = 12
+	DyeMagenta         = 13
+	DyeOrange          = 14
+	DyeBoneMeal        = 15
 )
-
-// DyeNames 染料 meta → 名称映射
 var DyeNames = [16]string{
 	"Ink Sac", "Rose Red", "Cactus Green", "Cocoa Beans",
 	"Lapis Lazuli", "Purple Dye", "Cyan Dye", "Light Gray Dye",
 	"Gray Dye", "Pink Dye", "Lime Dye", "Dandelion Yellow",
 	"Light Blue Dye", "Magenta Dye", "Orange Dye", "Bone Meal",
 }
-
-// GetDyeName 获取染料名称
 func GetDyeName(meta int) string {
 	if meta < 0 || meta > 15 {
 		return "Unknown Dye"
 	}
 	return DyeNames[meta]
 }
-
-// ============ 头颅子类型 ============
-// SKULL/MOB_HEAD (397) 通过 meta 区分
 
 const (
 	SkullSkeleton       = 0
@@ -64,9 +51,6 @@ func GetSkullName(meta int) string {
 	return SkullNames[meta]
 }
 
-// ============ 唱片 ============
-// MCPE 唱片物品 ID 范围: 500-511
-
 const (
 	RECORD_13      = 500
 	RECORD_CAT     = 501
@@ -81,8 +65,6 @@ const (
 	RECORD_11      = 510
 	RECORD_WAIT    = 511
 )
-
-// RecordInfo 唱片信息
 type RecordInfo struct {
 	ID   int
 	Name string
@@ -102,13 +84,9 @@ var records = []RecordInfo{
 	{RECORD_11, "Music Disc - 11"},
 	{RECORD_WAIT, "Music Disc - wait"},
 }
-
-// IsRecord 判断是否为唱片
 func IsRecord(id int) bool {
 	return id >= RECORD_13 && id <= RECORD_WAIT
 }
-
-// GetRecordName 获取唱片名称
 func GetRecordName(id int) string {
 	if id < RECORD_13 || id > RECORD_WAIT {
 		return ""
@@ -116,17 +94,13 @@ func GetRecordName(id int) string {
 	return records[id-RECORD_13].Name
 }
 
-// ============ 旗帜/盔甲架 ============
-
 const (
 	BANNER      = 446
 	ARMOR_STAND = 425
 )
-
-// BannerBaseColors 旗帜底色 (meta 0-15, 与染料对应)
 func GetBannerColorName(meta int) string {
 	if meta < 0 || meta > 15 {
 		return "White Banner"
 	}
-	return DyeNames[15-meta] + " Banner" // 旗帜颜色与染料反序
+	return DyeNames[15-meta] + " Banner"
 }

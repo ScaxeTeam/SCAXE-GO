@@ -195,9 +195,6 @@ func (e *PlayerInteractEvent) GetHandlers() *HandlerList {
 	return playerInteractHandlers
 }
 
-// ---------- PlayerPreLoginEvent ----------
-// Fired before login processing, allows IP/auth checks.
-
 type PlayerPreLoginEvent struct {
 	*PlayerEvent
 	Address     string
@@ -219,9 +216,6 @@ func (e *PlayerPreLoginEvent) GetHandlers() *HandlerList { return playerPreLogin
 func (e *PlayerPreLoginEvent) GetKickMessage() string    { return e.KickMessage }
 func (e *PlayerPreLoginEvent) SetKickMessage(msg string) { e.KickMessage = msg }
 
-// ---------- PlayerLoginEvent ----------
-// Fired after successful authentication.
-
 type PlayerLoginEvent struct {
 	*PlayerEvent
 	KickMessage string
@@ -238,9 +232,6 @@ func NewPlayerLoginEvent(playerName string, playerID int64) *PlayerLoginEvent {
 func (e *PlayerLoginEvent) GetHandlers() *HandlerList { return playerLoginHandlers }
 func (e *PlayerLoginEvent) GetKickMessage() string    { return e.KickMessage }
 func (e *PlayerLoginEvent) SetKickMessage(msg string) { e.KickMessage = msg }
-
-// ---------- PlayerCreationEvent ----------
-// Fired when a Player object is being created.
 
 type PlayerCreationEvent struct {
 	*PlayerEvent
@@ -260,8 +251,6 @@ func NewPlayerCreationEvent(address string, port int) *PlayerCreationEvent {
 
 func (e *PlayerCreationEvent) GetHandlers() *HandlerList { return playerCreationHandlers }
 
-// ---------- PlayerRespawnEvent ----------
-
 type PlayerRespawnEvent struct {
 	*PlayerEvent
 	X, Y, Z float64
@@ -278,8 +267,6 @@ func NewPlayerRespawnEvent(playerName string, playerID int64, x, y, z float64) *
 
 func (e *PlayerRespawnEvent) GetHandlers() *HandlerList { return playerRespawnHandlers }
 
-// ---------- PlayerKickEvent ----------
-
 type PlayerKickEvent struct {
 	*PlayerEvent
 	Reason string
@@ -295,8 +282,6 @@ func NewPlayerKickEvent(playerName string, playerID int64, reason string) *Playe
 }
 
 func (e *PlayerKickEvent) GetHandlers() *HandlerList { return playerKickHandlers }
-
-// ---------- PlayerTransferEvent ----------
 
 type PlayerTransferEvent struct {
 	*PlayerEvent
@@ -315,8 +300,6 @@ func NewPlayerTransferEvent(playerName string, playerID int64, address string, p
 }
 
 func (e *PlayerTransferEvent) GetHandlers() *HandlerList { return playerTransferHandlers }
-
-// ---------- PlayerDropItemEvent ----------
 
 type PlayerDropItemEvent struct {
 	*PlayerEvent
@@ -338,8 +321,6 @@ func NewPlayerDropItemEvent(playerName string, playerID int64, itemID, itemMeta,
 
 func (e *PlayerDropItemEvent) GetHandlers() *HandlerList { return playerDropItemHandlers }
 
-// ---------- PlayerItemHeldEvent ----------
-
 type PlayerItemHeldEvent struct {
 	*PlayerEvent
 	ItemID     int
@@ -360,8 +341,6 @@ func NewPlayerItemHeldEvent(playerName string, playerID int64, itemID, slot, hot
 
 func (e *PlayerItemHeldEvent) GetHandlers() *HandlerList { return playerItemHeldHandlers }
 
-// ---------- PlayerItemConsumeEvent ----------
-
 type PlayerItemConsumeEvent struct {
 	*PlayerEvent
 	ItemID   int
@@ -379,8 +358,6 @@ func NewPlayerItemConsumeEvent(playerName string, playerID int64, itemID, itemMe
 }
 
 func (e *PlayerItemConsumeEvent) GetHandlers() *HandlerList { return playerItemConsumeHandlers }
-
-// ---------- PlayerCommandPreprocessEvent ----------
 
 type PlayerCommandPreprocessEvent struct {
 	*PlayerEvent
@@ -402,8 +379,6 @@ func (e *PlayerCommandPreprocessEvent) GetHandlers() *HandlerList {
 func (e *PlayerCommandPreprocessEvent) GetMessage() string    { return e.Message }
 func (e *PlayerCommandPreprocessEvent) SetMessage(msg string) { e.Message = msg }
 
-// ---------- PlayerGameModeChangeEvent ----------
-
 type PlayerGameModeChangeEvent struct {
 	*PlayerEvent
 	NewGameMode int
@@ -419,8 +394,6 @@ func NewPlayerGameModeChangeEvent(playerName string, playerID int64, newGameMode
 }
 
 func (e *PlayerGameModeChangeEvent) GetHandlers() *HandlerList { return playerGameModeChangeHandlers }
-
-// ---------- PlayerToggleSneakEvent ----------
 
 type PlayerToggleSneakEvent struct {
 	*PlayerEvent
@@ -438,8 +411,6 @@ func NewPlayerToggleSneakEvent(playerName string, playerID int64, isSneaking boo
 
 func (e *PlayerToggleSneakEvent) GetHandlers() *HandlerList { return playerToggleSneakHandlers }
 
-// ---------- PlayerToggleSprintEvent ----------
-
 type PlayerToggleSprintEvent struct {
 	*PlayerEvent
 	IsSprinting bool
@@ -456,8 +427,6 @@ func NewPlayerToggleSprintEvent(playerName string, playerID int64, isSprinting b
 
 func (e *PlayerToggleSprintEvent) GetHandlers() *HandlerList { return playerToggleSprintHandlers }
 
-// ---------- PlayerJumpEvent ----------
-
 type PlayerJumpEvent struct {
 	*PlayerEvent
 }
@@ -471,8 +440,6 @@ func NewPlayerJumpEvent(playerName string, playerID int64) *PlayerJumpEvent {
 }
 
 func (e *PlayerJumpEvent) GetHandlers() *HandlerList { return playerJumpHandlers }
-
-// ---------- PlayerAnimationEvent ----------
 
 type PlayerAnimationEvent struct {
 	*PlayerEvent
@@ -489,8 +456,6 @@ func NewPlayerAnimationEvent(playerName string, playerID int64, animationType in
 }
 
 func (e *PlayerAnimationEvent) GetHandlers() *HandlerList { return playerAnimationHandlers }
-
-// ---------- PlayerBucketEmptyEvent ----------
 
 type PlayerBucketEmptyEvent struct {
 	*PlayerEvent
@@ -512,8 +477,6 @@ func NewPlayerBucketEmptyEvent(playerName string, playerID int64, bucketID, bx, 
 
 func (e *PlayerBucketEmptyEvent) GetHandlers() *HandlerList { return playerBucketEmptyHandlers }
 
-// ---------- PlayerBucketFillEvent ----------
-
 type PlayerBucketFillEvent struct {
 	*PlayerEvent
 	BucketID               int
@@ -534,8 +497,6 @@ func NewPlayerBucketFillEvent(playerName string, playerID int64, bucketID, bx, b
 
 func (e *PlayerBucketFillEvent) GetHandlers() *HandlerList { return playerBucketFillHandlers }
 
-// ---------- PlayerGlassBottleEvent ----------
-
 type PlayerGlassBottleEvent struct {
 	*PlayerEvent
 	BlockX, BlockY, BlockZ int
@@ -551,8 +512,6 @@ func NewPlayerGlassBottleEvent(playerName string, playerID int64, bx, by, bz int
 }
 
 func (e *PlayerGlassBottleEvent) GetHandlers() *HandlerList { return playerGlassBottleHandlers }
-
-// ---------- PlayerBedEnterEvent ----------
 
 type PlayerBedEnterEvent struct {
 	*PlayerEvent
@@ -570,8 +529,6 @@ func NewPlayerBedEnterEvent(playerName string, playerID int64, bx, by, bz int) *
 
 func (e *PlayerBedEnterEvent) GetHandlers() *HandlerList { return playerBedEnterHandlers }
 
-// ---------- PlayerBedLeaveEvent ----------
-
 type PlayerBedLeaveEvent struct {
 	*PlayerEvent
 	BlockX, BlockY, BlockZ int
@@ -587,9 +544,6 @@ func NewPlayerBedLeaveEvent(playerName string, playerID int64, bx, by, bz int) *
 }
 
 func (e *PlayerBedLeaveEvent) GetHandlers() *HandlerList { return playerBedLeaveHandlers }
-
-// ---------- PlayerExhaustEvent ----------
-// Fired when a player's exhaustion level increases.
 
 type PlayerExhaustEvent struct {
 	*PlayerEvent
@@ -621,8 +575,6 @@ func NewPlayerExhaustEvent(playerName string, playerID int64, amount float64, ca
 func (e *PlayerExhaustEvent) GetHandlers() *HandlerList { return playerExhaustHandlers }
 func (e *PlayerExhaustEvent) SetAmount(a float64)       { e.Amount = a }
 
-// ---------- PlayerExperienceChangeEvent ----------
-
 type PlayerExperienceChangeEvent struct {
 	*PlayerEvent
 	OldLevel int
@@ -645,8 +597,6 @@ func (e *PlayerExperienceChangeEvent) GetHandlers() *HandlerList {
 	return playerExperienceChangeHandlers
 }
 
-// ---------- PlayerHungerChangeEvent ----------
-
 type PlayerHungerChangeEvent struct {
 	*PlayerEvent
 	OldHunger int
@@ -664,8 +614,6 @@ func NewPlayerHungerChangeEvent(playerName string, playerID int64, oldHunger, ne
 }
 
 func (e *PlayerHungerChangeEvent) GetHandlers() *HandlerList { return playerHungerChangeHandlers }
-
-// ---------- PlayerAchievementAwardedEvent ----------
 
 type PlayerAchievementAwardedEvent struct {
 	*PlayerEvent
@@ -685,8 +633,6 @@ func (e *PlayerAchievementAwardedEvent) GetHandlers() *HandlerList {
 	return playerAchievementAwardedHandlers
 }
 
-// ---------- PlayerPickupExpOrbEvent ----------
-
 type PlayerPickupExpOrbEvent struct {
 	*PlayerEvent
 	ExpAmount int
@@ -702,9 +648,6 @@ func NewPlayerPickupExpOrbEvent(playerName string, playerID int64, expAmount int
 }
 
 func (e *PlayerPickupExpOrbEvent) GetHandlers() *HandlerList { return playerPickupExpOrbHandlers }
-
-// ---------- PlayerTextPreSendEvent ----------
-// Fired before text packets are sent to the player (allows filtering).
 
 type PlayerTextPreSendEvent struct {
 	*PlayerEvent
@@ -723,8 +666,6 @@ func NewPlayerTextPreSendEvent(playerName string, playerID int64, message string
 }
 
 func (e *PlayerTextPreSendEvent) GetHandlers() *HandlerList { return playerTextPreSendHandlers }
-
-// ---------- PlayerFishEvent ----------
 
 type PlayerFishEvent struct {
 	*PlayerEvent
@@ -745,8 +686,6 @@ func NewPlayerFishEvent(playerName string, playerID int64, itemID, itemMeta, ite
 }
 
 func (e *PlayerFishEvent) GetHandlers() *HandlerList { return playerFishHandlers }
-
-// ---------- PlayerUseFishingRodEvent ----------
 
 const (
 	FishingRodActionCast = 0

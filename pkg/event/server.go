@@ -140,9 +140,6 @@ func (e *QueryRegenerateEvent) GetHandlers() *HandlerList {
 	return queryRegenerateHandlers
 }
 
-// ---------- ServerCommandEvent ----------
-// Fired when a command is issued from the server console.
-
 type ServerCommandEvent struct {
 	*ServerEvent
 	Command string
@@ -161,9 +158,6 @@ func (e *ServerCommandEvent) GetHandlers() *HandlerList { return serverCommandHa
 func (e *ServerCommandEvent) GetCommand() string        { return e.Command }
 func (e *ServerCommandEvent) SetCommand(cmd string)     { e.Command = cmd }
 
-// ---------- RemoteServerCommandEvent ----------
-// Fired when a command is issued from RCON.
-
 type RemoteServerCommandEvent struct {
 	*ServerCommandEvent
 }
@@ -177,8 +171,6 @@ func NewRemoteServerCommandEvent(command string) *RemoteServerCommandEvent {
 }
 
 func (e *RemoteServerCommandEvent) GetHandlers() *HandlerList { return remoteServerCommandHandlers }
-
-// ---------- LowMemoryEvent ----------
 
 type LowMemoryEvent struct {
 	*ServerEvent

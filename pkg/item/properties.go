@@ -249,25 +249,17 @@ var itemProperties = map[int]ItemProperty{
 	SPAWN_EGG:    {ID: SPAWN_EGG, Name: "Spawn Egg"},
 	MAP:          {ID: MAP, Name: "Empty Map"},
 	FILLED_MAP:   {ID: FILLED_MAP, Name: "Map"},
-
-	// ============ D.3 杂项物品补全 ============
-
-	// 农作物 / 种子
 	WHEAT:          {ID: WHEAT, Name: "Wheat"},
 	SUGARCANE:      {ID: SUGARCANE, Name: "Sugar Cane"},
 	PUMPKIN_SEEDS:  {ID: PUMPKIN_SEEDS, Name: "Pumpkin Seeds"},
 	MELON_SEEDS:    {ID: MELON_SEEDS, Name: "Melon Seeds"},
 	NETHER_WART:    {ID: NETHER_WART, Name: "Nether Wart"},
 	BEETROOT_SEEDS: {ID: BEETROOT_SEEDS, Name: "Beetroot Seeds"},
-
-	// 鱼类
 	RAW_SALMON:             {ID: RAW_SALMON, Name: "Raw Salmon", FoodRestore: 2, Saturation: 0.4},
 	CLOWN_FISH:             {ID: CLOWN_FISH, Name: "Clownfish", FoodRestore: 1, Saturation: 0.2},
 	PUFFER_FISH:            {ID: PUFFER_FISH, Name: "Pufferfish", FoodRestore: 1, Saturation: 0.2},
 	COOKED_SALMON:          {ID: COOKED_SALMON, Name: "Cooked Salmon", FoodRestore: 6, Saturation: 9.6},
 	ENCHANTED_GOLDEN_APPLE: {ID: ENCHANTED_GOLDEN_APPLE, Name: "Enchanted Golden Apple", FoodRestore: 4, Saturation: 9.6},
-
-	// 可放置物品
 	PAINTING:      {ID: PAINTING, Name: "Painting"},
 	WOODEN_DOOR:   {ID: WOODEN_DOOR, Name: "Wooden Door"},
 	IRON_DOOR:     {ID: IRON_DOOR, Name: "Iron Door"},
@@ -278,15 +270,11 @@ var itemProperties = map[int]ItemProperty{
 	BREWING_STAND: {ID: BREWING_STAND, Name: "Brewing Stand"},
 	CAULDRON:      {ID: CAULDRON, Name: "Cauldron"},
 	HOPPER:        {ID: HOPPER, Name: "Hopper"},
-
-	// 门 (木质变种)
 	SPRUCE_DOOR:   {ID: SPRUCE_DOOR, Name: "Spruce Door"},
 	BIRCH_DOOR:    {ID: BIRCH_DOOR, Name: "Birch Door"},
 	JUNGLE_DOOR:   {ID: JUNGLE_DOOR, Name: "Jungle Door"},
 	ACACIA_DOOR:   {ID: ACACIA_DOOR, Name: "Acacia Door"},
 	DARK_OAK_DOOR: {ID: DARK_OAK_DOOR, Name: "Dark Oak Door"},
-
-	// 交通
 	BOAT:            {ID: BOAT, Name: "Oak Boat", MaxStackSize: 1},
 	MINECART:        {ID: MINECART, Name: "Minecart", MaxStackSize: 1},
 	SADDLE:          {ID: SADDLE, Name: "Saddle", MaxStackSize: 1},
@@ -298,8 +286,6 @@ var itemProperties = map[int]ItemProperty{
 	JUNGLE_BOAT:     {ID: JUNGLE_BOAT, Name: "Jungle Boat", MaxStackSize: 1},
 	ACACIA_BOAT:     {ID: ACACIA_BOAT, Name: "Acacia Boat", MaxStackSize: 1},
 	DARK_OAK_BOAT:   {ID: DARK_OAK_BOAT, Name: "Dark Oak Boat", MaxStackSize: 1},
-
-	// 怪物掉落 / 酿造材料
 	BLAZE_ROD:            {ID: BLAZE_ROD, Name: "Blaze Rod"},
 	GHAST_TEAR:           {ID: GHAST_TEAR, Name: "Ghast Tear"},
 	SPIDER_EYE:           {ID: SPIDER_EYE, Name: "Spider Eye"},
@@ -310,8 +296,6 @@ var itemProperties = map[int]ItemProperty{
 	RABBIT_FOOT:          {ID: RABBIT_FOOT, Name: "Rabbit's Foot"},
 	RABBIT_HIDE:          {ID: RABBIT_HIDE, Name: "Rabbit Hide"},
 	NETHER_BRICK:         {ID: NETHER_BRICK, Name: "Nether Brick"},
-
-	// 特殊物品
 	MOB_HEAD:            {ID: MOB_HEAD, Name: "Mob Head"},
 	ENCHANTED_BOOK:      {ID: ENCHANTED_BOOK, Name: "Enchanted Book", MaxStackSize: 1},
 	BOTTLE_O_ENCHANTING: {ID: BOTTLE_O_ENCHANTING, Name: "Bottle o' Enchanting"},

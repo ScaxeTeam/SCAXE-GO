@@ -229,11 +229,23 @@ func Debug(msg string, args ...any) {
 }
 
 func Banner(serverName, version, address string, maxPlayers int) {
-	line := colorize(colorGreen+colorBold, "═══════════════════════════════════════════")
+	line := colorize(colorGreen+colorBold, "═══════════════════════════════════════════════════")
+
+	art := []string{
+		`  ____   ____    _    __  __ _____        ____  ___  `,
+		` / ___| / ___|  / \   \ \/ /| ____|      / ___|/ _ \ `,
+		` \___ \| |     / _ \   \  / |  _|}______| |  _| | | |`,
+		`  ___) | |___ / ___ \  /  \ | |__|______| |_| | |_| |`,
+		` |____/ \____/_/   \_\/_/\_\|_____|      \____|\___/ `,
+	}
 
 	write(fmt.Sprintf("\n%s\n", line))
-	write(fmt.Sprintf("  %s\n", colorize(colorGreen+colorBold, "SCAXE-GO")))
+	for _, l := range art {
+		write(fmt.Sprintf("%s\n", colorize(colorGreen+colorBold, l)))
+	}
 	write(fmt.Sprintf("  %s\n", colorize(colorWhite, version)))
+	write(fmt.Sprintf("  %s %s\n", colorize(colorGray, "By"), colorize(colorYellow, "SCAXETeam")))
+	write(fmt.Sprintf("  %s\n", colorize(colorGray, "https://github.com/ScaxeTeam/SCAXE-GO")))
 	write(fmt.Sprintf("%s\n", line))
 	write(fmt.Sprintf("  Server:  %s\n", colorize(colorCyan, serverName)))
 	write(fmt.Sprintf("  Address: %s\n", colorize(colorCyan, address)))

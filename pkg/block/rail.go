@@ -1,14 +1,5 @@
 package block
 
-// rail.go — 4 种铁轨方块
-// Rail (66): 普通铁轨，可弯曲 (meta 0-9)
-// PoweredRail (27): 充能铁轨，bit 0x08 = powered
-// DetectorRail (28): 探测铁轨，bit 0x08 = active
-// ActivatorRail (126): 激活铁轨，bit 0x08 = powered
-
-// ── Rail (ID 66) ────────────────────────────────────────────────
-// 10 directions (meta 0-9): straight + curved.
-
 type railBlock struct{ DefaultBlockInteraction }
 
 func (b *railBlock) GetID() uint8                { return RAIL }
@@ -26,9 +17,6 @@ func (b *railBlock) GetToolTier() int            { return 0 }
 func (b *railBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(RAIL), Meta: 0, Count: 1}}
 }
-
-// ── Powered Rail (ID 27) ────────────────────────────────────────
-// Meta bit 0x08 = powered. Lower 3 bits = direction (0-5).
 
 type poweredRailBlock struct{ DefaultBlockInteraction }
 
@@ -48,9 +36,6 @@ func (b *poweredRailBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(POWERED_RAIL), Meta: 0, Count: 1}}
 }
 
-// ── Detector Rail (ID 28) ───────────────────────────────────────
-// Meta bit 0x08 = entity on rail (active). Lower 3 bits = direction.
-
 type detectorRailBlock struct{ DefaultBlockInteraction }
 
 func (b *detectorRailBlock) GetID() uint8                { return DETECTOR_RAIL }
@@ -68,9 +53,6 @@ func (b *detectorRailBlock) GetToolTier() int            { return 0 }
 func (b *detectorRailBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(DETECTOR_RAIL), Meta: 0, Count: 1}}
 }
-
-// ── Activator Rail (ID 126) ─────────────────────────────────────
-// Meta bit 0x08 = powered. Lower 3 bits = direction.
 
 type activatorRailBlock struct{ DefaultBlockInteraction }
 
@@ -90,8 +72,6 @@ func (b *activatorRailBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(ACTIVATOR_RAIL), Meta: 0, Count: 1}}
 }
 
-// ── Rail meta direction constants ───────────────────────────────
-
 const (
 	RailStraightNorthSouth = 0
 	RailStraightEastWest   = 1
@@ -99,18 +79,14 @@ const (
 	RailAscendWest         = 3
 	RailAscendNorth        = 4
 	RailAscendSouth        = 5
-	RailCurvedSouthEast    = 6 // only normal rail
+	RailCurvedSouthEast    = 6
 	RailCurvedSouthWest    = 7
 	RailCurvedNorthWest    = 8
 	RailCurvedNorthEast    = 9
 )
-
-// RailIsPowered checks if a powered/activator rail meta has the powered bit set.
 func RailIsPowered(meta uint8) bool {
 	return meta&0x08 != 0
 }
-
-// ── Registration ────────────────────────────────────────────────
 
 func init() {
 	Registry.Register(&railBlock{})

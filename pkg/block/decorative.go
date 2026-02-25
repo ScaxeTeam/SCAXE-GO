@@ -1,8 +1,5 @@
 package block
 
-// ── Carpet (ID 171) ─────────────────────────────────────────────
-// 16 dye colors via meta 0-15. Thin, non-solid, replaceable.
-
 type carpetBlock struct{ DefaultBlockInteraction }
 
 func (b *carpetBlock) GetID() uint8                { return CARPET }
@@ -20,8 +17,6 @@ func (b *carpetBlock) GetToolTier() int            { return 0 }
 func (b *carpetBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(CARPET), Meta: 0, Count: 1}}
 }
-
-// ── Snow Layer (ID 78) ──────────────────────────────────────────
 
 type snowLayerBlock struct{ DefaultBlockInteraction }
 
@@ -41,10 +36,8 @@ func (b *snowLayerBlock) GetDrops(toolType, toolTier int) []Drop {
 	if toolType != ToolTypeShovel {
 		return nil
 	}
-	return []Drop{{ID: 332, Meta: 0, Count: 1}} // SNOWBALL
+	return []Drop{{ID: 332, Meta: 0, Count: 1}}
 }
-
-// ── Snow Block (ID 80) ──────────────────────────────────────────
 
 type snowBlockBlock struct{ DefaultBlockInteraction }
 
@@ -64,10 +57,8 @@ func (b *snowBlockBlock) GetDrops(toolType, toolTier int) []Drop {
 	if toolType != ToolTypeShovel {
 		return nil
 	}
-	return []Drop{{ID: 332, Meta: 0, Count: 4}} // 4 SNOWBALL
+	return []Drop{{ID: 332, Meta: 0, Count: 4}}
 }
-
-// ── Vine (ID 106) ───────────────────────────────────────────────
 
 type vineBlock struct{ DefaultBlockInteraction }
 
@@ -90,8 +81,6 @@ func (b *vineBlock) GetDrops(toolType, toolTier int) []Drop {
 	return nil
 }
 
-// ── Ladder (ID 65) ──────────────────────────────────────────────
-
 type ladderBlock struct{ DefaultBlockInteraction }
 
 func (b *ladderBlock) GetID() uint8                { return LADDER }
@@ -109,8 +98,6 @@ func (b *ladderBlock) GetToolTier() int            { return 0 }
 func (b *ladderBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(LADDER), Meta: 0, Count: 1}}
 }
-
-// ── Cobweb (ID 30) ──────────────────────────────────────────────
 
 type cobwebBlock struct{ DefaultBlockInteraction }
 
@@ -130,10 +117,8 @@ func (b *cobwebBlock) GetDrops(toolType, toolTier int) []Drop {
 	if toolType == ToolTypeShears {
 		return []Drop{{ID: int(COBWEB), Meta: 0, Count: 1}}
 	}
-	return []Drop{{ID: 287, Meta: 0, Count: 1}} // STRING
+	return []Drop{{ID: 287, Meta: 0, Count: 1}}
 }
-
-// ── Dandelion (ID 37) ───────────────────────────────────────────
 
 type dandelionBlock struct{ DefaultBlockInteraction }
 
@@ -153,9 +138,6 @@ func (b *dandelionBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(DANDELION), Meta: 0, Count: 1}}
 }
 
-// ── Red Flower (ID 38) ─────────────────────────────────────────
-// Meta 0-8 for different flower types (poppy, blue orchid, etc.)
-
 type redFlowerBlock struct{ DefaultBlockInteraction }
 
 func (b *redFlowerBlock) GetID() uint8                { return RED_FLOWER }
@@ -173,8 +155,6 @@ func (b *redFlowerBlock) GetToolTier() int            { return 0 }
 func (b *redFlowerBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(RED_FLOWER), Meta: 0, Count: 1}}
 }
-
-// ── Brown Mushroom (ID 39) ──────────────────────────────────────
 
 type brownMushroomBlock struct{ DefaultBlockInteraction }
 
@@ -194,8 +174,6 @@ func (b *brownMushroomBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(BROWN_MUSHROOM), Meta: 0, Count: 1}}
 }
 
-// ── Red Mushroom (ID 40) ────────────────────────────────────────
-
 type redMushroomBlock struct{ DefaultBlockInteraction }
 
 func (b *redMushroomBlock) GetID() uint8                { return RED_MUSHROOM }
@@ -213,8 +191,6 @@ func (b *redMushroomBlock) GetToolTier() int            { return 0 }
 func (b *redMushroomBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(RED_MUSHROOM), Meta: 0, Count: 1}}
 }
-
-// ── Dead Bush (ID 32) ───────────────────────────────────────────
 
 type deadBushBlock struct{ DefaultBlockInteraction }
 
@@ -234,10 +210,8 @@ func (b *deadBushBlock) GetDrops(toolType, toolTier int) []Drop {
 	if toolType == ToolTypeShears {
 		return []Drop{{ID: int(DEAD_BUSH), Meta: 0, Count: 1}}
 	}
-	return []Drop{{ID: 280, Meta: 0, Count: 1}} // STICK
+	return []Drop{{ID: 280, Meta: 0, Count: 1}}
 }
-
-// ── Pumpkin (ID 86) ─────────────────────────────────────────────
 
 type pumpkinBlock struct{ DefaultBlockInteraction }
 
@@ -257,8 +231,6 @@ func (b *pumpkinBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(PUMPKIN), Meta: 0, Count: 1}}
 }
 
-// ── Lit Pumpkin / Jack o'Lantern (ID 91) ────────────────────────
-
 type litPumpkinBlock struct{ DefaultBlockInteraction }
 
 func (b *litPumpkinBlock) GetID() uint8                { return LIT_PUMPKIN }
@@ -277,8 +249,6 @@ func (b *litPumpkinBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(LIT_PUMPKIN), Meta: 0, Count: 1}}
 }
 
-// ── Melon Block (ID 103) ────────────────────────────────────────
-
 type melonBlockBlock struct{ DefaultBlockInteraction }
 
 func (b *melonBlockBlock) GetID() uint8                { return MELON_BLOCK }
@@ -294,10 +264,8 @@ func (b *melonBlockBlock) CanBeReplaced() bool         { return false }
 func (b *melonBlockBlock) GetToolType() int            { return ToolTypeAxe }
 func (b *melonBlockBlock) GetToolTier() int            { return 0 }
 func (b *melonBlockBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: 360, Meta: 0, Count: 4}} // MELON_SLICE (3-7, simplified to 4)
+	return []Drop{{ID: 360, Meta: 0, Count: 4}}
 }
-
-// ── Hay Bale (ID 170) ───────────────────────────────────────────
 
 type hayBaleBlock struct{ DefaultBlockInteraction }
 
@@ -317,8 +285,6 @@ func (b *hayBaleBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(HAY_BALE), Meta: 0, Count: 1}}
 }
 
-// ── Flower Pot (ID 140) ─────────────────────────────────────────
-
 type flowerPotBlock struct{ DefaultBlockInteraction }
 
 func (b *flowerPotBlock) GetID() uint8                { return FLOWER_POT_BLOCK }
@@ -334,10 +300,8 @@ func (b *flowerPotBlock) CanBeReplaced() bool         { return false }
 func (b *flowerPotBlock) GetToolType() int            { return ToolTypeNone }
 func (b *flowerPotBlock) GetToolTier() int            { return 0 }
 func (b *flowerPotBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: 390, Meta: 0, Count: 1}} // FLOWER_POT item
+	return []Drop{{ID: 390, Meta: 0, Count: 1}}
 }
-
-// ── Registration ────────────────────────────────────────────────
 
 func init() {
 	Registry.Register(&carpetBlock{})
