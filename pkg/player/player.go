@@ -735,6 +735,12 @@ func (p *Player) GetLoadedChunkCount() int {
 	return len(p.LoadedChunks)
 }
 
+func (p *Player) ClearAllChunks() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.LoadedChunks = make(map[int64]bool)
+}
+
 const (
 	ActionStartBreak   int32 = 0
 	ActionAbortBreak   int32 = 1

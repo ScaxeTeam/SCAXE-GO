@@ -59,7 +59,8 @@ func (p *PlayerListPacket) Encode(stream *BinaryStream) error {
 
 			stream.WriteString16(entry.SkinName)
 
-			stream.WriteString16(entry.SkinData)
+			stream.WriteShort(int16(len(entry.SkinData)))
+			stream.WriteBytes([]byte(entry.SkinData))
 		}
 
 	}

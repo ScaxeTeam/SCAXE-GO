@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"sort"
 	"sync"
 	"time"
 
@@ -307,15 +308,11 @@ func (s *Server) updatePlayerListAdd(p *player.Player) {
 		SkinData: p.SkinData,
 	}}
 
-	payload, err := protocol.CreateBatch([]protocol.DataPacket{pk})
-	if err != nil {
-		logger.Error("Failed to batch updatePlayerListAdd", "error", err)
-		return
+	for _, other := range s.GetOnlinePlayers() {
+		if other.Spawned {
+			s.sendPacket(other, pk)
+		}
 	}
-
-	batchPk := protocol.NewBatchPacket()
-	batchPk.Payload = payload
-	s.BroadcastPacket(batchPk)
 }
 
 func (s *Server) updatePlayerListRemove(p *player.Player) {
@@ -643,6 +640,8 @@ func (s *Server) handlePacket(session *raknet.Session, data []byte) {
 		s.handleMobEquipment(p, pk)
 	case *protocol.DropItemPacket:
 		s.handleDropItem(p, pk)
+	case *protocol.ContainerSetSlotPacket:
+		s.handleContainerSetSlot(p, pk)
 	default:
 		logger.Debug("Unhandled packet", "packet", pkt.Name())
 	}
@@ -823,6 +822,15 @@ func (s *Server) handleText(p *player.Player, pkt *protocol.TextPacket) {
 
 	if pkt.Message[0] == '/' {
 		cmdLine := pkt.Message[1:]
+
+		if cmdLine == "rechunk" {
+			p.ClearAllChunks()
+			p.SendMessage(fmt.Sprintf("§aCleared all loaded chunks (%d). Resending...", p.GetLoadedChunkCount()))
+			s.checkChunks(p)
+			p.SendMessage(fmt.Sprintf("§aSent first batch. Loaded: %d", p.GetLoadedChunkCount()))
+			return
+		}
+
 		if s.CommandMap.Dispatch(p, cmdLine) {
 			return
 		}
@@ -875,18 +883,7 @@ func (s *Server) handleRequestChunkRadius(p *player.Player, pkt *protocol.Reques
 
 func (s *Server) tryFirstSpawn(p *player.Player) {
 
-	if p.SpawnReadyTick == 0 {
-		if p.GetLoadedChunkCount() >= p.GetSpawnThreshold() {
-			p.SpawnReadyTick = s.CurrentTick
-			logger.Debug("Spawn ready, waiting 1 tick for chunk processing",
-				"player", p.Username, "chunks", p.GetLoadedChunkCount(),
-				"threshold", p.GetSpawnThreshold(), "tick", s.CurrentTick)
-			return
-		}
-		return
-	}
-
-	if s.CurrentTick <= p.SpawnReadyTick {
+	if p.GetLoadedChunkCount() < p.GetSpawnThreshold() {
 		return
 	}
 
@@ -930,6 +927,7 @@ func (s *Server) tryFirstSpawn(p *player.Player) {
 	p.Spawned = true
 	p.LoadingChunks = false
 
+	s.updatePlayerListAdd(p)
 	s.sendExistingPlayersTo(p)
 
 	for _, other := range s.GetOnlinePlayers() {
@@ -960,35 +958,53 @@ func (s *Server) checkChunks(p *player.Player) {
 
 	maxChunksPerCall := 4
 	if !p.IsSpawned() {
-		maxChunksPerCall = 48
+		maxChunksPerCall = 16
+	}
+
+	type chunkEntry struct {
+		x, z int32
+		dist int32
+	}
+	var pending []chunkEntry
+
+	for dx := -radius; dx <= radius; dx++ {
+		for dz := -radius; dz <= radius; dz++ {
+			dist := dx*dx + dz*dz
+			if dist > radius*radius {
+				continue
+			}
+			x := cx + dx
+			z := cz + dz
+			if !p.IsChunkLoaded(x, z) {
+				pending = append(pending, chunkEntry{x, z, dist})
+			}
+		}
+	}
+
+	sort.Slice(pending, func(i, j int) bool {
+		return pending[i].dist < pending[j].dist
+	})
+
+	if len(pending) > maxChunksPerCall {
+		pending = pending[:maxChunksPerCall]
 	}
 
 	var chunkPackets []protocol.DataPacket
 	var loadedCoords [][2]int32
 
-	for x := cx - radius; x <= cx+radius; x++ {
-		for z := cz - radius; z <= cz+radius; z++ {
-			if len(chunkPackets) >= maxChunksPerCall {
-				break
-			}
-			if !p.IsChunkLoaded(x, z) {
-				chunk := s.Level.GetChunk(x, z, true)
-				if chunk == nil {
-					continue
-				}
+	for _, entry := range pending {
+		chunk := s.Level.GetChunk(entry.x, entry.z, true)
+		if chunk == nil {
+			continue
+		}
 
-				fullChunk := protocol.NewFullChunkDataPacket()
-				fullChunk.ChunkX = x
-				fullChunk.ChunkZ = z
-				fullChunk.Order = protocol.ChunkOrderLayered
-				fullChunk.Data = chunk.ToPacketBytes()
-				chunkPackets = append(chunkPackets, fullChunk)
-				loadedCoords = append(loadedCoords, [2]int32{x, z})
-			}
-		}
-		if len(chunkPackets) >= maxChunksPerCall {
-			break
-		}
+		fullChunk := protocol.NewFullChunkDataPacket()
+		fullChunk.ChunkX = entry.x
+		fullChunk.ChunkZ = entry.z
+		fullChunk.Order = protocol.ChunkOrderLayered
+		fullChunk.Data = chunk.ToPacketBytes()
+		chunkPackets = append(chunkPackets, fullChunk)
+		loadedCoords = append(loadedCoords, [2]int32{entry.x, entry.z})
 	}
 
 	if len(chunkPackets) > 0 {
@@ -1004,7 +1020,6 @@ func (s *Server) checkChunks(p *player.Player) {
 		for _, coord := range loadedCoords {
 			p.MarkChunkLoaded(coord[0], coord[1])
 
-			// 向玩家发送该区块中所有 Spawnable Tile 的数据（告示牌文字、箱子方向等）
 			if chunk := s.Level.GetChunk(coord[0], coord[1], false); chunk != nil {
 				s.Level.SendChunkTiles(chunk, p)
 			}
@@ -1661,4 +1676,18 @@ func (s *Server) handleMobEquipment(p *player.Player, pkt *protocol.MobEquipment
 	s.broadcastPacketExcept(broadcastPkt, p)
 
 	logger.Debug("Equipment changed", "player", p.Username, "slot", pkt.SelectedSlot)
+}
+
+func (s *Server) handleContainerSetSlot(p *player.Player, pkt *protocol.ContainerSetSlotPacket) {
+	if !p.Spawned {
+		return
+	}
+
+	if pkt.WindowID == 0 {
+		if int(pkt.Slot) >= p.Inventory.GetSize() {
+			return
+		}
+		p.Inventory.SetItem(int(pkt.Slot), pkt.Item)
+		logger.Player("Container set slot", "player", p.Username, "slot", pkt.Slot, "item", pkt.Item.ID, "meta", pkt.Item.Meta, "count", pkt.Item.Count)
+	}
 }

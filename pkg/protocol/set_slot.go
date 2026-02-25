@@ -41,5 +41,21 @@ func (p *ContainerSetSlotPacket) Encode(stream *BinaryStream) error {
 }
 
 func (p *ContainerSetSlotPacket) Decode(stream *BinaryStream) error {
-	return nil
+	var err error
+	p.WindowID, err = stream.ReadByte()
+	if err != nil {
+		return err
+	}
+	slot, err := stream.ReadShort()
+	if err != nil {
+		return err
+	}
+	p.Slot = uint16(slot)
+	hotbar, err := stream.ReadShort()
+	if err != nil {
+		return err
+	}
+	p.HotbarSlot = uint16(hotbar)
+	p.Item, err = readSlot(stream)
+	return err
 }
