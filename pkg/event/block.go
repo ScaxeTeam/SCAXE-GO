@@ -130,6 +130,9 @@ func (e *SignChangeEvent) SetLine(index int, text string) {
 	}
 }
 
+// ---------- BlockBurnEvent ----------
+// Fired when a block is destroyed by fire.
+
 type BlockBurnEvent struct {
 	*BlockEvent
 }
@@ -143,6 +146,9 @@ func NewBlockBurnEvent(x, y, z, blockID, blockMeta int) *BlockBurnEvent {
 }
 
 func (e *BlockBurnEvent) GetHandlers() *HandlerList { return blockBurnHandlers }
+
+// ---------- BlockFormEvent ----------
+// Fired when a block forms naturally (e.g. snow layer from snowfall, obsidian from lava+water).
 
 type BlockFormEvent struct {
 	*BlockEvent
@@ -162,6 +168,9 @@ func NewBlockFormEvent(x, y, z, blockID, blockMeta, newBlockID, newBlockMeta int
 
 func (e *BlockFormEvent) GetHandlers() *HandlerList { return blockFormHandlers }
 
+// ---------- BlockGrowEvent ----------
+// Fired when a crop or plant block grows.
+
 type BlockGrowEvent struct {
 	*BlockEvent
 	NewBlockID   int
@@ -179,6 +188,9 @@ func NewBlockGrowEvent(x, y, z, blockID, blockMeta, newBlockID, newBlockMeta int
 }
 
 func (e *BlockGrowEvent) GetHandlers() *HandlerList { return blockGrowHandlers }
+
+// ---------- BlockSpreadEvent ----------
+// Fired when a block spreads to another position (e.g. fire, grass, mycelium).
 
 type BlockSpreadEvent struct {
 	*BlockEvent
@@ -202,6 +214,9 @@ func NewBlockSpreadEvent(x, y, z, blockID, blockMeta, srcX, srcY, srcZ, newBlock
 
 func (e *BlockSpreadEvent) GetHandlers() *HandlerList { return blockSpreadHandlers }
 
+// ---------- LeavesDecayEvent ----------
+// Fired when a leaf block decays naturally.
+
 type LeavesDecayEvent struct {
 	*BlockEvent
 }
@@ -215,6 +230,9 @@ func NewLeavesDecayEvent(x, y, z, blockID, blockMeta int) *LeavesDecayEvent {
 }
 
 func (e *LeavesDecayEvent) GetHandlers() *HandlerList { return leavesDecayHandlers }
+
+// ---------- ItemFrameDropItemEvent ----------
+// Fired when an item is removed from an item frame.
 
 type ItemFrameDropItemEvent struct {
 	*BlockEvent

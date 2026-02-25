@@ -49,38 +49,57 @@ type BlockBehavior interface {
 
 	GetDrops(toolType, toolTier int) []Drop
 
+	// ── 交互方法 (PHP Block.php 核心回调) ─────────────
+
+	// Place 放置方块。返回 true 表示放置成功。
 	Place(ctx *BlockContext) bool
 
+	// OnBreak 方块被破坏时的回调。
 	OnBreak(ctx *BlockContext, toolType, toolTier int) bool
 
+	// OnUpdate 方块更新回调（normal/random/scheduled/weak）。
 	OnUpdate(ctx *BlockContext, updateType int) bool
 
+	// OnActivate 右键交互。返回 true 表示已处理。
 	OnActivate(ctx *BlockContext, playerID int64) bool
 
+	// CanBeActivated 此方块是否支持右键交互。
 	CanBeActivated() bool
 
+	// IsBreakable 是否可以被破坏。
 	IsBreakable(toolType, toolTier int) bool
 
+	// GetBreakTime 破坏时间（秒），-1 表示使用默认计算。
 	GetBreakTime(toolType, toolTier int) float64
 
+	// TickRate 计划更新的间隔 tick 数，0=不参与计划更新。
 	TickRate() int
 
+	// GetFrictionFactor 摩擦系数（冰=0.98, 默认=0.6）。
 	GetFrictionFactor() float64
 
+	// HasEntityCollision 是否有实体碰撞特殊处理。
 	HasEntityCollision() bool
 
+	// OnEntityCollide 实体碰撞回调。
 	OnEntityCollide(ctx *BlockContext, entityID int64)
 
+	// GetBurnChance 火焰蔓延概率。
 	GetBurnChance() int
 
+	// GetBurnAbility 燃烧能力。
 	GetBurnAbility() int
 
+	// CanPassThrough 是否可穿过。
 	CanPassThrough() bool
 
+	// IsPowerSource 是否为红石信号源。
 	IsPowerSource() bool
 
+	// GetStrongPower 强红石信号强度。
 	GetStrongPower(face int) int
 
+	// GetWeakPower 弱红石信号强度。
 	GetWeakPower(face int) int
 }
 
@@ -197,14 +216,16 @@ func (r *blockRegistry) registerVanillaBlocks() {
 	r.behaviors[AIR] = &airBlock{}
 
 	r.behaviors[STONE] = &stoneBlock{}
-
+	// GRASS/DIRT 由 natural.go init() 注册
 	r.behaviors[COBBLESTONE] = &simpleBlock{id: COBBLESTONE, name: "Cobblestone", hardness: 2.0}
 	r.behaviors[PLANKS] = &simpleBlock{id: PLANKS, name: "Planks", hardness: 2.0, blastResistance: 15}
 	r.behaviors[BEDROCK] = &simpleBlock{id: BEDROCK, name: "Bedrock", hardness: -1, blastResistance: 18000000}
-
+	// WATER/STILL_WATER/LAVA/STILL_LAVA 由 liquid.go init() 注册
+	// SAND/GRAVEL 由 natural.go init() 注册
+	// GOLD_ORE/IRON_ORE/COAL_ORE/DIAMOND_ORE 由 ores.go init() 注册
 	r.behaviors[WOOD] = &simpleBlock{id: WOOD, name: "Wood", hardness: 2.0}
 	r.behaviors[LEAVES] = &leavesBlock{id: LEAVES, name: "Leaves"}
-
+	// GLASS/GLASS_PANE/STAINED_GLASS/IRON_BARS 由 glass.go init() 注册
 	r.behaviors[OBSIDIAN] = &simpleBlock{id: OBSIDIAN, name: "Obsidian", hardness: 50.0, blastResistance: 6000}
 	r.behaviors[TORCH] = &torchBlock{}
 	r.behaviors[GLOWSTONE_BLOCK] = &simpleBlock{id: GLOWSTONE_BLOCK, name: "Glowstone", hardness: 0.3, lightLevel: 15}

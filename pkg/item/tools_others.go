@@ -1,5 +1,15 @@
 package item
 
+// tools_others.go — 斧/铲/锄 物品（各5种材质，共15个）
+// 对应 PHP: item/*Axe.php, *Shovel.php, *Hoe.php (各5个，共15个文件)
+//
+// PHP 中每个工具继承 Tool，仅提供 ID/Name/AttackPoints/isAxe|isShovel|isHoe()==tier。
+// Go 端 tool.go 的 toolData 表已包含所有基础数据。
+// 此文件提供斧/铲/锄的专用查询函数。
+
+// ==================== 斧 Axe ====================
+
+// AxeInfo 斧的属性
 type AxeInfo struct {
 	ID           int
 	Name         string
@@ -31,11 +41,13 @@ var axes = map[int]AxeInfo{
 	},
 }
 
+// IsAxe 判断物品是否为斧
 func IsAxe(id int) bool {
 	_, ok := axes[id]
 	return ok
 }
 
+// GetAxeInfo 获取斧属性，非斧返回 nil
 func GetAxeInfo(id int) *AxeInfo {
 	info, ok := axes[id]
 	if !ok {
@@ -44,6 +56,7 @@ func GetAxeInfo(id int) *AxeInfo {
 	return &info
 }
 
+// GetAxeTier 获取斧的材质等级
 func GetAxeTier(id int) int {
 	if info, ok := axes[id]; ok {
 		return info.Tier
@@ -51,10 +64,14 @@ func GetAxeTier(id int) int {
 	return TierNone
 }
 
+// AllAxeIDs 返回所有斧的物品ID
 func AllAxeIDs() []int {
 	return []int{WOODEN_AXE, STONE_AXE, IRON_AXE, GOLD_AXE, DIAMOND_AXE}
 }
 
+// ==================== 铲 Shovel ====================
+
+// ShovelInfo 铲的属性
 type ShovelInfo struct {
 	ID           int
 	Name         string
@@ -86,11 +103,13 @@ var shovels = map[int]ShovelInfo{
 	},
 }
 
+// IsShovel 判断物品是否为铲
 func IsShovel(id int) bool {
 	_, ok := shovels[id]
 	return ok
 }
 
+// GetShovelInfo 获取铲属性，非铲返回 nil
 func GetShovelInfo(id int) *ShovelInfo {
 	info, ok := shovels[id]
 	if !ok {
@@ -99,6 +118,7 @@ func GetShovelInfo(id int) *ShovelInfo {
 	return &info
 }
 
+// GetShovelTier 获取铲的材质等级
 func GetShovelTier(id int) int {
 	if info, ok := shovels[id]; ok {
 		return info.Tier
@@ -106,10 +126,14 @@ func GetShovelTier(id int) int {
 	return TierNone
 }
 
+// AllShovelIDs 返回所有铲的物品ID
 func AllShovelIDs() []int {
 	return []int{WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLD_SHOVEL, DIAMOND_SHOVEL}
 }
 
+// ==================== 锄 Hoe ====================
+
+// HoeInfo 锄的属性
 type HoeInfo struct {
 	ID           int
 	Name         string
@@ -141,11 +165,13 @@ var hoes = map[int]HoeInfo{
 	},
 }
 
+// IsHoe 判断物品是否为锄
 func IsHoe(id int) bool {
 	_, ok := hoes[id]
 	return ok
 }
 
+// GetHoeInfo 获取锄属性，非锄返回 nil
 func GetHoeInfo(id int) *HoeInfo {
 	info, ok := hoes[id]
 	if !ok {
@@ -154,6 +180,7 @@ func GetHoeInfo(id int) *HoeInfo {
 	return &info
 }
 
+// GetHoeTier 获取锄的材质等级
 func GetHoeTier(id int) int {
 	if info, ok := hoes[id]; ok {
 		return info.Tier
@@ -161,6 +188,7 @@ func GetHoeTier(id int) int {
 	return TierNone
 }
 
+// AllHoeIDs 返回所有锄的物品ID
 func AllHoeIDs() []int {
 	return []int{WOODEN_HOE, STONE_HOE, IRON_HOE, GOLD_HOE, DIAMOND_HOE}
 }

@@ -136,6 +136,9 @@ func (e *FurnaceBurnEvent) GetHandlers() *HandlerList {
 	return furnaceBurnHandlers
 }
 
+// ---------- InventoryPickupItemEvent ----------
+// Fired when an inventory (hopper) picks up an item entity.
+
 type InventoryPickupItemEvent struct {
 	*InventoryEvent
 	ItemEntityID int64
@@ -151,6 +154,9 @@ func NewInventoryPickupItemEvent(invType int, itemEntityID int64) *InventoryPick
 }
 
 func (e *InventoryPickupItemEvent) GetHandlers() *HandlerList { return inventoryPickupItemHandlers }
+
+// ---------- InventoryPickupArrowEvent ----------
+// Fired when an inventory (player/hopper) picks up an arrow entity.
 
 type InventoryPickupArrowEvent struct {
 	*InventoryEvent

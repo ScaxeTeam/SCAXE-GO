@@ -130,6 +130,8 @@ func (e *SpawnChangeEvent) GetHandlers() *HandlerList {
 	return spawnChangeHandlers
 }
 
+// ---------- LevelInitEvent ----------
+
 type LevelInitEvent struct {
 	*LevelEvent
 }
@@ -143,6 +145,8 @@ func NewLevelInitEvent(levelName string) *LevelInitEvent {
 }
 
 func (e *LevelInitEvent) GetHandlers() *HandlerList { return levelInitHandlers }
+
+// ---------- LevelSaveEvent ----------
 
 type LevelSaveEvent struct {
 	*LevelEvent
@@ -158,9 +162,11 @@ func NewLevelSaveEvent(levelName string) *LevelSaveEvent {
 
 func (e *LevelSaveEvent) GetHandlers() *HandlerList { return levelSaveHandlers }
 
+// ---------- WeatherChangeEvent ----------
+
 type WeatherChangeEvent struct {
 	*LevelEvent
-	ToRain bool
+	ToRain bool // true = starting rain, false = stopping
 }
 
 var weatherChangeHandlers = NewHandlerList()

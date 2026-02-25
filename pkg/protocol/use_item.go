@@ -29,7 +29,6 @@ func (p *UseItemPacket) Encode(stream *BinaryStream) error {
 }
 
 func (p *UseItemPacket) Decode(stream *BinaryStream) error {
-	DecodeHeader(stream, p.ID())
 	var err error
 	p.X, err = stream.ReadInt()
 	if err != nil {
@@ -75,12 +74,15 @@ func (p *UseItemPacket) Decode(stream *BinaryStream) error {
 		return err
 	}
 
-	if ProtocolCurrent >= 70 {
-		p.Slot, err = stream.ReadInt()
-		if err != nil {
-			return err
-		}
+	_, err = stream.ReadShort()
+	if err != nil {
+		return err
 	}
+	slot, err := stream.ReadShort()
+	if err != nil {
+		return err
+	}
+	p.Slot = int32(slot)
 
 	p.Item, err = readSlot(stream)
 	if err != nil {

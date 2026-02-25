@@ -1,5 +1,7 @@
 package block
 
+// ── Redstone Torch (lit) ────────────────────────────────────────
+
 type redstoneTorchBlock struct{ DefaultBlockInteraction }
 
 func (b *redstoneTorchBlock) GetID() uint8                { return REDSTONE_TORCH }
@@ -15,8 +17,10 @@ func (b *redstoneTorchBlock) CanBeReplaced() bool         { return false }
 func (b *redstoneTorchBlock) GetToolType() int            { return ToolTypeNone }
 func (b *redstoneTorchBlock) GetToolTier() int            { return 0 }
 func (b *redstoneTorchBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: int(REDSTONE_TORCH), Meta: 0, Count: 1}}
+	return []Drop{{ID: int(REDSTONE_TORCH), Meta: 0, Count: 1}} // always drop lit torch
 }
+
+// ── Redstone Torch (unlit) ──────────────────────────────────────
 
 type unlitRedstoneTorchBlock struct{ DefaultBlockInteraction }
 
@@ -33,8 +37,10 @@ func (b *unlitRedstoneTorchBlock) CanBeReplaced() bool         { return false }
 func (b *unlitRedstoneTorchBlock) GetToolType() int            { return ToolTypeNone }
 func (b *unlitRedstoneTorchBlock) GetToolTier() int            { return 0 }
 func (b *unlitRedstoneTorchBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: int(REDSTONE_TORCH), Meta: 0, Count: 1}}
+	return []Drop{{ID: int(REDSTONE_TORCH), Meta: 0, Count: 1}} // drop lit torch
 }
+
+// ── Inactive Redstone Lamp (ID 123) ─────────────────────────────
 
 type inactiveRedstoneLampBlock struct{ DefaultBlockInteraction }
 
@@ -54,6 +60,8 @@ func (b *inactiveRedstoneLampBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(INACTIVE_REDSTONE_LAMP), Meta: 0, Count: 1}}
 }
 
+// ── Active Redstone Lamp (ID 124) ───────────────────────────────
+
 type activeRedstoneLampBlock struct{ DefaultBlockInteraction }
 
 func (b *activeRedstoneLampBlock) GetID() uint8                { return ACTIVE_REDSTONE_LAMP }
@@ -69,8 +77,11 @@ func (b *activeRedstoneLampBlock) CanBeReplaced() bool         { return false }
 func (b *activeRedstoneLampBlock) GetToolType() int            { return ToolTypeNone }
 func (b *activeRedstoneLampBlock) GetToolTier() int            { return 0 }
 func (b *activeRedstoneLampBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: int(INACTIVE_REDSTONE_LAMP), Meta: 0, Count: 1}}
+	return []Drop{{ID: int(INACTIVE_REDSTONE_LAMP), Meta: 0, Count: 1}} // always drops inactive lamp
 }
+
+// ── Lever (ID 69) ───────────────────────────────────────────────
+// Meta: bit 0x08 = ON. Lower 3 bits = orientation/face.
 
 type leverBlock struct{ DefaultBlockInteraction }
 
@@ -90,6 +101,9 @@ func (b *leverBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(LEVER), Meta: 0, Count: 1}}
 }
 
+// ── Stone Button (ID 77) ────────────────────────────────────────
+// Meta: bit 0x08 = pressed. Lower 3 bits = face. 20-tick pulse.
+
 type stoneButtonBlock struct{ DefaultBlockInteraction }
 
 func (b *stoneButtonBlock) GetID() uint8                { return STONE_BUTTON }
@@ -107,6 +121,9 @@ func (b *stoneButtonBlock) GetToolTier() int            { return 0 }
 func (b *stoneButtonBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(STONE_BUTTON), Meta: 0, Count: 1}}
 }
+
+// ── Wooden Button (ID 143) ──────────────────────────────────────
+// Meta: bit 0x08 = pressed. Lower 3 bits = face. 30-tick pulse.
 
 type woodenButtonBlock struct{ DefaultBlockInteraction }
 
@@ -126,6 +143,8 @@ func (b *woodenButtonBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(WOODEN_BUTTON), Meta: 0, Count: 1}}
 }
 
+// ── Redstone Wire (ID 55) ───────────────────────────────────────
+
 type redstoneWireBlock struct{ DefaultBlockInteraction }
 
 func (b *redstoneWireBlock) GetID() uint8                { return REDSTONE_WIRE }
@@ -141,8 +160,11 @@ func (b *redstoneWireBlock) CanBeReplaced() bool         { return false }
 func (b *redstoneWireBlock) GetToolType() int            { return ToolTypeNone }
 func (b *redstoneWireBlock) GetToolTier() int            { return 0 }
 func (b *redstoneWireBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: 331, Meta: 0, Count: 1}}
+	return []Drop{{ID: 331, Meta: 0, Count: 1}} // redstone dust item
 }
+
+// ── Registration ────────────────────────────────────────────────
+// Note: Redstone ore blocks are registered in ores.go
 
 func init() {
 	Registry.Register(&redstoneTorchBlock{})

@@ -227,6 +227,7 @@ func (s *Scheduler) MainThreadHeartbeat(currentTick int64) {
 		}
 	}
 
+	// 收集异步任务结果 (对应 PHP ServerScheduler::mainThreadHeartbeat → asyncPool->collectTasks)
 	GetAsyncPool().CollectTasks()
 }
 

@@ -6,27 +6,34 @@ import (
 	"github.com/scaxe/scaxe-go/pkg/item"
 )
 
+// InventoryHolder is implemented by anything that can hold an inventory
+// (Tile entities, Entities, etc.)
 type InventoryHolder interface {
 	GetInventory() Inventory
 }
 
+// PositionHolder is implemented by holders with a position (tiles)
 type PositionHolder interface {
 	GetX() int
 	GetY() int
 	GetZ() int
 }
 
+// EntityHolder is implemented by entity holders (entities with runtime ID)
 type EntityHolder interface {
 	GetEntityID() int64
 }
 
+// Viewer represents a player who can receive inventory packets.
+// This avoids circular dependency with the player package.
 type Viewer interface {
 	GetWindowID(inv Inventory) byte
 	SendDataPacket(pk interface{})
 	IsSpawned() bool
-	GetViewerID() string
+	GetViewerID() string // unique identifier for viewer map key
 }
 
+// Inventory is the interface for all inventory types.
 type Inventory interface {
 	GetSize() int
 	GetItem(slot int) item.Item
@@ -40,21 +47,26 @@ type Inventory interface {
 	AddItem(items ...item.Item) []item.Item
 	CanAddItem(item item.Item) bool
 
+	// Viewer management
 	GetViewers() map[string]Viewer
 	Open(who Viewer) bool
 	Close(who Viewer)
 	OnOpen(who Viewer)
 	OnClose(who Viewer)
 
+	// Network sync
 	SendContents(targets ...Viewer)
 	SendSlot(index int, targets ...Viewer)
 
+	// Type info
 	GetType() *InventoryType
 	GetHolder() InventoryHolder
 
+	// Slot change callback
 	OnSlotChange(index int, before item.Item, send bool)
 }
 
+// BaseInventory is the default implementation of Inventory.
 type BaseInventory struct {
 	slots    []item.Item
 	name     string
@@ -68,6 +80,7 @@ type BaseInventory struct {
 	OnSlotChangeFunc func(slot int, item item.Item)
 }
 
+// NewBaseInventory creates a BaseInventory with the given type and holder.
 func NewBaseInventory(holder InventoryHolder, invType *InventoryType, overrideSize int, overrideTitle string) *BaseInventory {
 	size := invType.GetDefaultSize()
 	if overrideSize > 0 {
@@ -90,6 +103,7 @@ func NewBaseInventory(holder InventoryHolder, invType *InventoryType, overrideSi
 	}
 }
 
+// NewSimpleInventory creates a BaseInventory without type/holder for simple use.
 func NewSimpleInventory(name string, size int) *BaseInventory {
 	return &BaseInventory{
 		slots:    make([]item.Item, size),
@@ -241,6 +255,7 @@ func (inv *BaseInventory) AddItem(items ...item.Item) []item.Item {
 			continue
 		}
 
+		// First pass: try to stack into existing slots
 		for i := 0; i < inv.size; i++ {
 			slotItem := inv.slots[i]
 			if slotItem.Equals(it, true, true) && slotItem.Count < slotItem.GetMaxStackSize() {
@@ -261,6 +276,7 @@ func (inv *BaseInventory) AddItem(items ...item.Item) []item.Item {
 			}
 		}
 
+		// Second pass: place in empty slots
 		if it.Count > 0 {
 			for i := 0; i < inv.size; i++ {
 				if inv.slots[i].ID == 0 {
@@ -324,6 +340,8 @@ func (inv *BaseInventory) RemoveItem(items ...item.Item) []item.Item {
 	return leftovers
 }
 
+// -- Viewer management --
+
 func (inv *BaseInventory) Open(who Viewer) bool {
 	inv.OnOpen(who)
 	return true
@@ -353,12 +371,16 @@ func (inv *BaseInventory) OnSlotChange(index int, before item.Item, send bool) {
 	}
 }
 
-func (inv *BaseInventory) SendContents(targets ...Viewer) {
+// -- Network sync --
 
+func (inv *BaseInventory) SendContents(targets ...Viewer) {
+	// Implemented by protocol-aware subclasses (ContainerInventory, PlayerInventory)
+	// Default no-op for non-networked inventories
 }
 
 func (inv *BaseInventory) SendSlot(index int, targets ...Viewer) {
-
+	// Implemented by protocol-aware subclasses
+	// Default no-op for non-networked inventories
 }
 
 func (inv *BaseInventory) getViewerSlice() []Viewer {

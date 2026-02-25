@@ -181,6 +181,8 @@ func (e *EntityDespawnEvent) GetHandlers() *HandlerList {
 	return entityDespawnHandlers
 }
 
+// ---------- EntityDamageByBlockEvent ----------
+
 type EntityDamageByBlockEvent struct {
 	*EntityDamageEvent
 	BlockID   int
@@ -198,6 +200,8 @@ func NewEntityDamageByBlockEvent(entityID int64, cause int, damage float64, bloc
 }
 
 func (e *EntityDamageByBlockEvent) GetHandlers() *HandlerList { return entityDamageByBlockHandlers }
+
+// ---------- EntityDamageByChildEntityEvent ----------
 
 type EntityDamageByChildEntityEvent struct {
 	*EntityDamageByEntityEvent
@@ -217,9 +221,11 @@ func (e *EntityDamageByChildEntityEvent) GetHandlers() *HandlerList {
 	return entityDamageByChildEntityHandlers
 }
 
+// ---------- EntityCombustEvent ----------
+
 type EntityCombustEvent struct {
 	*EntityEvent
-	Duration int
+	Duration int // fire ticks
 }
 
 var entityCombustHandlers = NewHandlerList()
@@ -233,6 +239,8 @@ func NewEntityCombustEvent(entityID int64, duration int) *EntityCombustEvent {
 
 func (e *EntityCombustEvent) GetHandlers() *HandlerList { return entityCombustHandlers }
 func (e *EntityCombustEvent) SetDuration(d int)         { e.Duration = d }
+
+// ---------- EntityCombustByBlockEvent ----------
 
 type EntityCombustByBlockEvent struct {
 	*EntityCombustEvent
@@ -250,6 +258,8 @@ func NewEntityCombustByBlockEvent(entityID int64, duration int, blockID int) *En
 
 func (e *EntityCombustByBlockEvent) GetHandlers() *HandlerList { return entityCombustByBlockHandlers }
 
+// ---------- EntityCombustByEntityEvent ----------
+
 type EntityCombustByEntityEvent struct {
 	*EntityCombustEvent
 	CombusterID int64
@@ -266,11 +276,13 @@ func NewEntityCombustByEntityEvent(entityID int64, duration int, combusterID int
 
 func (e *EntityCombustByEntityEvent) GetHandlers() *HandlerList { return entityCombustByEntityHandlers }
 
+// ---------- EntityExplodeEvent ----------
+
 type EntityExplodeEvent struct {
 	*EntityEvent
 	X, Y, Z   float64
 	Force     float64
-	BlockList [][3]int
+	BlockList [][3]int // affected block positions
 	Yield     float64
 }
 
@@ -287,6 +299,8 @@ func NewEntityExplodeEvent(entityID int64, x, y, z, force, yield float64) *Entit
 
 func (e *EntityExplodeEvent) GetHandlers() *HandlerList { return entityExplodeHandlers }
 func (e *EntityExplodeEvent) SetYield(y float64)        { e.Yield = y }
+
+// ---------- ExplosionPrimeEvent ----------
 
 type ExplosionPrimeEvent struct {
 	*EntityEvent
@@ -306,6 +320,8 @@ func NewExplosionPrimeEvent(entityID int64, force float64) *ExplosionPrimeEvent 
 
 func (e *ExplosionPrimeEvent) GetHandlers() *HandlerList { return explosionPrimeHandlers }
 func (e *ExplosionPrimeEvent) SetForce(f float64)        { e.Force = f }
+
+// ---------- EntityRegainHealthEvent ----------
 
 const (
 	RegainEating       = 0
@@ -333,6 +349,8 @@ func NewEntityRegainHealthEvent(entityID int64, amount float64, reason int) *Ent
 func (e *EntityRegainHealthEvent) GetHandlers() *HandlerList { return entityRegainHealthHandlers }
 func (e *EntityRegainHealthEvent) SetAmount(a float64)       { e.Amount = a }
 
+// ---------- EntityMotionEvent ----------
+
 type EntityMotionEvent struct {
 	*EntityEvent
 	MotionX, MotionY, MotionZ float64
@@ -348,6 +366,8 @@ func NewEntityMotionEvent(entityID int64, mx, my, mz float64) *EntityMotionEvent
 }
 
 func (e *EntityMotionEvent) GetHandlers() *HandlerList { return entityMotionHandlers }
+
+// ---------- EntityTeleportEvent ----------
 
 type EntityTeleportEvent struct {
 	*EntityEvent
@@ -367,6 +387,8 @@ func NewEntityTeleportEvent(entityID int64, fromX, fromY, fromZ, toX, toY, toZ f
 
 func (e *EntityTeleportEvent) GetHandlers() *HandlerList { return entityTeleportHandlers }
 
+// ---------- EntityLevelChangeEvent ----------
+
 type EntityLevelChangeEvent struct {
 	*EntityEvent
 	OriginLevelName string
@@ -385,6 +407,8 @@ func NewEntityLevelChangeEvent(entityID int64, originLevel, targetLevel string) 
 
 func (e *EntityLevelChangeEvent) GetHandlers() *HandlerList { return entityLevelChangeHandlers }
 
+// ---------- EntityShootBowEvent ----------
+
 type EntityShootBowEvent struct {
 	*EntityEvent
 	Force        float64
@@ -402,6 +426,8 @@ func NewEntityShootBowEvent(entityID int64, force float64, projectileID int64) *
 }
 
 func (e *EntityShootBowEvent) GetHandlers() *HandlerList { return entityShootBowHandlers }
+
+// ---------- EntityArmorChangeEvent ----------
 
 type EntityArmorChangeEvent struct {
 	*EntityEvent
@@ -423,6 +449,9 @@ func NewEntityArmorChangeEvent(entityID int64, slot, oldItemID, newItemID int) *
 
 func (e *EntityArmorChangeEvent) GetHandlers() *HandlerList { return entityArmorChangeHandlers }
 
+// ---------- EntityEatEvent ----------
+// Base event for entities eating something.
+
 type EntityEatEvent struct {
 	*EntityEvent
 	HealAmount     float64
@@ -440,6 +469,8 @@ func NewEntityEatEvent(entityID int64, healAmount, saturationGain float64) *Enti
 }
 
 func (e *EntityEatEvent) GetHandlers() *HandlerList { return entityEatHandlers }
+
+// ---------- EntityEatBlockEvent ----------
 
 type EntityEatBlockEvent struct {
 	*EntityEatEvent
@@ -459,6 +490,8 @@ func NewEntityEatBlockEvent(entityID int64, healAmount, saturationGain float64, 
 
 func (e *EntityEatBlockEvent) GetHandlers() *HandlerList { return entityEatBlockHandlers }
 
+// ---------- EntityEatItemEvent ----------
+
 type EntityEatItemEvent struct {
 	*EntityEatEvent
 	ItemID   int
@@ -477,6 +510,8 @@ func NewEntityEatItemEvent(entityID int64, healAmount, saturationGain float64, i
 
 func (e *EntityEatItemEvent) GetHandlers() *HandlerList { return entityEatItemHandlers }
 
+// ---------- EntityDrinkPotionEvent ----------
+
 type EntityDrinkPotionEvent struct {
 	*EntityEvent
 	PotionID int
@@ -492,6 +527,8 @@ func NewEntityDrinkPotionEvent(entityID int64, potionID int) *EntityDrinkPotionE
 }
 
 func (e *EntityDrinkPotionEvent) GetHandlers() *HandlerList { return entityDrinkPotionHandlers }
+
+// ---------- EntityInventoryChangeEvent ----------
 
 type EntityInventoryChangeEvent struct {
 	*EntityEvent
@@ -513,6 +550,8 @@ func NewEntityInventoryChangeEvent(entityID int64, slot, oldItemID, newItemID in
 
 func (e *EntityInventoryChangeEvent) GetHandlers() *HandlerList { return entityInventoryChangeHandlers }
 
+// ---------- EntityBlockChangeEvent ----------
+
 type EntityBlockChangeEvent struct {
 	*EntityEvent
 	BlockX, BlockY, BlockZ int
@@ -532,6 +571,8 @@ func NewEntityBlockChangeEvent(entityID int64, bx, by, bz, oldBlockID, newBlockI
 }
 
 func (e *EntityBlockChangeEvent) GetHandlers() *HandlerList { return entityBlockChangeHandlers }
+
+// ---------- EntityGenerateEvent ----------
 
 type EntityGenerateEvent struct {
 	*EntityEvent
@@ -558,6 +599,8 @@ func NewEntityGenerateEvent(entityID int64, x, y, z float64, cause int) *EntityG
 
 func (e *EntityGenerateEvent) GetHandlers() *HandlerList { return entityGenerateHandlers }
 
+// ---------- ProjectileHitEvent ----------
+
 type ProjectileHitEvent struct {
 	*EntityEvent
 	HitEntityID int64
@@ -573,6 +616,8 @@ func NewProjectileHitEvent(projectileID int64, hitEntityID int64) *ProjectileHit
 }
 
 func (e *ProjectileHitEvent) GetHandlers() *HandlerList { return projectileHitHandlers }
+
+// ---------- ProjectileLaunchEvent ----------
 
 type ProjectileLaunchEvent struct {
 	*EntityEvent
@@ -590,6 +635,8 @@ func NewProjectileLaunchEvent(projectileID, shooterID int64) *ProjectileLaunchEv
 
 func (e *ProjectileLaunchEvent) GetHandlers() *HandlerList { return projectileLaunchHandlers }
 
+// ---------- ItemSpawnEvent ----------
+
 type ItemSpawnEvent struct {
 	*EntityEvent
 }
@@ -602,6 +649,8 @@ func NewItemSpawnEvent(entityID int64) *ItemSpawnEvent {
 
 func (e *ItemSpawnEvent) GetHandlers() *HandlerList { return itemSpawnHandlers }
 
+// ---------- ItemDespawnEvent ----------
+
 type ItemDespawnEvent struct {
 	*EntityEvent
 }
@@ -613,6 +662,8 @@ func NewItemDespawnEvent(entityID int64) *ItemDespawnEvent {
 }
 
 func (e *ItemDespawnEvent) GetHandlers() *HandlerList { return itemDespawnHandlers }
+
+// ---------- ItemMergeEvent ----------
 
 type ItemMergeEvent struct {
 	*EntityEvent
@@ -629,6 +680,8 @@ func NewItemMergeEvent(entityID, targetEntityID int64) *ItemMergeEvent {
 }
 
 func (e *ItemMergeEvent) GetHandlers() *HandlerList { return itemMergeHandlers }
+
+// ---------- CreeperPowerEvent ----------
 
 const (
 	CreeperPowerCauseLightning = 0

@@ -11,7 +11,7 @@ type Mob struct {
 
 	BehaviorManager *ai.BehaviorManager
 	Jumping         bool
-	levelAccess     ai.LevelAccess
+	levelAccess     ai.LevelAccess // AI 世界感知适配器
 }
 
 func NewMob() *Mob {
@@ -48,10 +48,11 @@ func (m *Mob) Tick(currentTick int64) bool {
 		m.AttackTime--
 	}
 
+	// AI tick 加 panic 保护，防止行为代码 bug 导致服务器崩溃
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-
+				// AI 行为异常，禁用该实体的 AI
 				m.BehaviorManager.SetEnabled(false)
 			}
 		}()
@@ -140,6 +141,7 @@ func (m *Mob) IsOnGround() bool {
 	return m.OnGround
 }
 
+// SetLevelAccess 设置 AI 世界感知适配器
 func (m *Mob) SetLevelAccess(la ai.LevelAccess) {
 	m.levelAccess = la
 }

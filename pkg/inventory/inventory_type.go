@@ -1,5 +1,6 @@
 package inventory
 
+// InventoryType defines the category and default properties of an inventory.
 type InventoryType struct {
 	id          int
 	defaultSize int
@@ -7,6 +8,7 @@ type InventoryType struct {
 	networkType byte
 }
 
+// Inventory type constants matching ScaxePHP
 const (
 	TypeChest          = 0
 	TypeDoubleChest    = 1
@@ -25,8 +27,9 @@ const (
 	TypeMob            = 253
 )
 
+// Network inventory type IDs (sent to client in ContainerOpenPacket)
 const (
-	NetworkInventory    byte = 0xFF
+	NetworkInventory    byte = 0xFF // -1 signed, player inventory
 	NetworkContainer    byte = 0
 	NetworkWorkbench    byte = 1
 	NetworkFurnace      byte = 2
@@ -60,6 +63,7 @@ func init() {
 	}
 }
 
+// GetInventoryType returns the InventoryType for the given type ID, or nil.
 func GetInventoryType(typeID int) *InventoryType {
 	return inventoryTypes[typeID]
 }

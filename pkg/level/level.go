@@ -125,6 +125,7 @@ func (l *Level) GetChunk(x, z int32, generate bool) *world.Chunk {
 			l.Chunks[hash] = c
 			l.mu.Unlock()
 
+			// 从区块 NBT 恢复 Tile 实体（告示牌/箱子/熔炉等）
 			l.loadTilesFromChunk(c)
 
 			return c
@@ -286,6 +287,7 @@ func (l *Level) SetBlock(x, y, z int32, id, meta byte, update bool) bool {
 		l.UpdateBlockLight(x, y, z+1, -1)
 		l.UpdateBlockLight(x, y, z-1, -1)
 
+		// 通知6个相邻方块发生更新（对应 PHP Level::setBlock 中调用 updateAround）
 		l.UpdateAround(x, y, z)
 	}
 
@@ -370,6 +372,7 @@ func (l *Level) GetEntities() []entity.IEntity {
 	return entities
 }
 
+// GetEntityByID 通过 ID 查找实体
 func (l *Level) GetEntityByID(id int64) entity.IEntity {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -457,16 +460,21 @@ func (l *Level) Tick() {
 	}
 	l.mu.Unlock()
 
+	// 实体 tick
 	for _, e := range entities {
 		if !e.Tick(l.Time) {
 			l.RemoveEntity(e)
 		}
 	}
 
+	// 计划方块更新（红石/液体等延迟更新）
 	l.processScheduledUpdates()
 
+	// 随机方块 tick（作物生长/草蔓延等）
 	l.tickChunks()
 
+	// Tile Entity tick（熔炉烧炼、酿造台等）
+	// 对应 PHP Level::actuallyDoTick() L738-751
 	l.Tiles.TickUpdates()
 }
 
@@ -608,6 +616,8 @@ func (l *Level) GetSafeSpawn() *world.Vector3 {
 	return world.NewVector3(spawn.X, float64(safeY), spawn.Z)
 }
 
+// loadTilesFromChunk 从区块的 NBT 数据中恢复 Tile 实体
+// 对应 PHP Level::loadChunk() 中遍历 TileEntities 并 Tile::createTile() 的逻辑
 func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 	if len(chunk.Tiles) == 0 {
 		return
@@ -629,6 +639,7 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 
 		l.Tiles.AddTile(t)
 
+		// 如果 Tile 需要 tick 更新（如熔炉、刷怪笼），注册到更新队列
 		if t.OnUpdate() {
 			l.Tiles.ScheduleUpdate(t)
 		}
@@ -642,6 +653,8 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 	}
 }
 
+// SendChunkTiles 向玩家发送指定区块中所有 Spawnable Tile 的数据
+// 在发送 FullChunkDataPacket 之后调用，让客户端渲染告示牌文字、箱子方向等
 func (l *Level) SendChunkTiles(chunk *world.Chunk, sender tile.PacketSender) {
 	tiles := l.Tiles.GetAllTiles()
 	for _, t := range tiles {

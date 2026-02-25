@@ -249,7 +249,7 @@ func (p *Player) IsSpawned() bool {
 }
 
 func (p *Player) Close() {
-
+	// Fire PlayerQuitEvent
 	quitEvt := event.NewPlayerQuitEvent(p.Username, p.GetID(), p.Username+" left the game", "disconnect")
 	event.Call(quitEvt)
 
@@ -590,6 +590,7 @@ func (p *Player) DoFirstSpawn() {
 	pkMove.OnGround = true
 	p.SendPacket(pkMove)
 
+	// Fire PlayerJoinEvent
 	joinEvt := event.NewPlayerJoinEvent(p.Username, p.GetID(), p.Username+" joined the game")
 	event.Call(joinEvt)
 }
@@ -599,6 +600,7 @@ func (p *Player) Kick(message string, hideScreen bool) {
 		return
 	}
 
+	// Fire PlayerKickEvent
 	kickEvt := event.NewPlayerKickEvent(p.Username, p.GetID(), message)
 	event.Call(kickEvt)
 	if kickEvt.IsCancelled() {
@@ -623,6 +625,7 @@ func (p *Player) HandleLogin(username, uuid, skinName string, skinData []byte, p
 	p.DisplayName = username
 	p.LoggedIn = true
 
+	// Fire PlayerLoginEvent
 	loginEvt := event.NewPlayerLoginEvent(username, p.GetID())
 	event.Call(loginEvt)
 	if loginEvt.IsCancelled() {
@@ -635,7 +638,7 @@ func (p *Player) HandleLogin(username, uuid, skinName string, skinData []byte, p
 }
 
 func (p *Player) HandleMove(x, y, z float64, yaw, bodyYaw, pitch float32, onGround bool) {
-
+	// Fire PlayerMoveEvent
 	moveEvt := event.NewPlayerMoveEvent(p.Username, p.GetID(),
 		p.Position.X, p.Position.Y, p.Position.Z,
 		x, y, z)

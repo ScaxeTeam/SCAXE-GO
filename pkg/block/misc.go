@@ -1,5 +1,10 @@
 package block
 
+// misc.go — 剩余简单方块批量注册
+// 这些方块用 simpleBlock/transparentBlock 或小型专用 struct 实现
+
+// ── Sapling (ID 6) ──────────────────────────────────────────────
+
 type saplingBlock struct{ DefaultBlockInteraction }
 
 func (b *saplingBlock) GetID() uint8                { return SAPLING }
@@ -17,6 +22,8 @@ func (b *saplingBlock) GetToolTier() int            { return 0 }
 func (b *saplingBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(SAPLING), Meta: 0, Count: 1}}
 }
+
+// ── Tall Grass (ID 31) ──────────────────────────────────────────
 
 type tallGrassBlock struct{ DefaultBlockInteraction }
 
@@ -36,8 +43,10 @@ func (b *tallGrassBlock) GetDrops(toolType, toolTier int) []Drop {
 	if toolType == ToolTypeShears {
 		return []Drop{{ID: int(TALL_GRASS), Meta: 0, Count: 1}}
 	}
-	return nil
+	return nil // chance to drop wheat seeds, simplified
 }
+
+// ── Bed Block (ID 26) ───────────────────────────────────────────
 
 type bedBlock struct{ DefaultBlockInteraction }
 
@@ -54,8 +63,10 @@ func (b *bedBlock) CanBeReplaced() bool         { return false }
 func (b *bedBlock) GetToolType() int            { return ToolTypeNone }
 func (b *bedBlock) GetToolTier() int            { return 0 }
 func (b *bedBlock) GetDrops(toolType, toolTier int) []Drop {
-	return []Drop{{ID: 355, Meta: 0, Count: 1}}
+	return []Drop{{ID: 355, Meta: 0, Count: 1}} // BED item
 }
+
+// ── Double Plant (ID 175) ───────────────────────────────────────
 
 type doublePlantBlock struct{ DefaultBlockInteraction }
 
@@ -78,6 +89,8 @@ func (b *doublePlantBlock) GetDrops(toolType, toolTier int) []Drop {
 	return nil
 }
 
+// ── Water Lily / Lily Pad (ID 111) ──────────────────────────────
+
 type waterLilyBlock struct{ DefaultBlockInteraction }
 
 func (b *waterLilyBlock) GetID() uint8                { return WATER_LILY }
@@ -96,6 +109,8 @@ func (b *waterLilyBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: int(WATER_LILY), Meta: 0, Count: 1}}
 }
 
+// ── Sign Post (ID 63) & Wall Sign (ID 68) ───────────────────────
+
 type signPostBlock struct{ DefaultBlockInteraction }
 
 func (b *signPostBlock) GetID() uint8                { return SIGN_POST }
@@ -112,7 +127,7 @@ func (b *signPostBlock) GetToolType() int            { return ToolTypeAxe }
 func (b *signPostBlock) GetToolTier() int            { return 0 }
 func (b *signPostBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: 323, Meta: 0, Count: 1}}
-}
+} // SIGN item
 
 type wallSignBlock struct{ DefaultBlockInteraction }
 
@@ -132,8 +147,11 @@ func (b *wallSignBlock) GetDrops(toolType, toolTier int) []Drop {
 	return []Drop{{ID: 323, Meta: 0, Count: 1}}
 }
 
-func init() {
+// ── Registration ────────────────────────────────────────────────
+// Batch-register all remaining simple blocks not handled in other files.
 
+func init() {
+	// ── Flowable / Transparent ──
 	Registry.Register(&saplingBlock{})
 	Registry.Register(&tallGrassBlock{})
 	Registry.Register(&bedBlock{})
@@ -142,6 +160,7 @@ func init() {
 	Registry.Register(&signPostBlock{})
 	Registry.Register(&wallSignBlock{})
 
+	// ── Simple solid blocks ──
 	Registry.Register(&simpleBlock{id: SPONGE, name: "Sponge", hardness: 0.6})
 	Registry.Register(&simpleBlock{id: SANDSTONE, name: "Sandstone", hardness: 0.8, toolType: ToolTypePickaxe})
 	Registry.Register(&simpleBlock{id: NOTEBLOCK, name: "Noteblock", hardness: 0.8, toolType: ToolTypeAxe})
