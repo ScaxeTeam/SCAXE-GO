@@ -331,14 +331,11 @@ func (e *Entity) HandleMove(x, y, z float64, yaw, bodyYaw, pitch float32, onGrou
 }
 
 func (e *Entity) HasMovementUpdate() bool {
-	if e.Motion.X != 0 || e.Motion.Y != 0 || e.Motion.Z != 0 {
-		return true
-	}
 	dx := e.Position.X - e.LastPos.X
 	dy := e.Position.Y - e.LastPos.Y
 	dz := e.Position.Z - e.LastPos.Z
 	distSq := dx*dx + dy*dy + dz*dz
-	return distSq > MotionThreshold*MotionThreshold
+	return distSq > 0.04
 }
 
 func (e *Entity) HasRotationUpdate() bool {

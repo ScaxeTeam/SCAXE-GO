@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"fmt"
-
 	"github.com/scaxe/scaxe-go/pkg/item"
 	"github.com/scaxe/scaxe-go/pkg/nbt"
 )
@@ -14,6 +12,7 @@ type ItemEntity struct {
 	Owner       string
 	Thrower     string
 	Age         int
+	Settled     bool
 }
 
 func NewItemEntity(it item.Item) *ItemEntity {
@@ -26,6 +25,8 @@ func NewItemEntity(it item.Item) *ItemEntity {
 
 	e.Width = 0.25
 	e.Height = 0.25
+	e.EyeHeight = 0
+	e.StepHeight = 0
 	e.recalculateBoundingBox()
 
 	e.Gravity = 0.04
@@ -39,6 +40,10 @@ func (e *ItemEntity) Tick(currentTick int64) bool {
 		return false
 	}
 
+	e.LastPos.X = e.Position.X
+	e.LastPos.Y = e.Position.Y
+	e.LastPos.Z = e.Position.Z
+
 	e.Age++
 	if e.Age > 6000 {
 		e.Close()
@@ -48,35 +53,52 @@ func (e *ItemEntity) Tick(currentTick int64) bool {
 	if e.PickupDelay > 0 {
 		e.PickupDelay--
 
-		if e.PickupDelay%10 == 0 || e.PickupDelay < 5 {
-
-			fmt.Printf("[DEBUG] ItemEntity %d: PickupDelay=%d, Age=%d\n", e.ID, e.PickupDelay, e.Age)
-		}
-
 		if e.PickupDelay > 0 && e.PickupDelay%8 == 0 {
 			e.tryMerge()
 		}
 	}
 
-	friction := 1.0 - e.Drag
-
-	if e.OnGround {
-
-		friction *= 0.6
-	} else {
-
-		e.Motion.Y *= friction
-
-		e.Motion.Y -= e.Gravity
-
-	}
-
-	e.Motion.X *= friction
-	e.Motion.Z *= friction
+	e.Motion.Y -= e.Gravity
 
 	e.Move(e.Motion.X, e.Motion.Y, e.Motion.Z)
 
+	friction := 1.0 - e.Drag
+
+	if e.OnGround {
+		friction *= 0.6
+	}
+
+	e.Motion.X *= friction
+	e.Motion.Y *= (1.0 - e.Drag)
+	e.Motion.Z *= friction
+
+	if e.OnGround {
+		e.Motion.Y *= -0.5
+	}
+
+	motionSq := e.Motion.X*e.Motion.X + e.Motion.Y*e.Motion.Y + e.Motion.Z*e.Motion.Z
+	if e.OnGround && motionSq < 0.0001 {
+		if !e.Settled {
+			e.Settled = true
+
+		}
+	} else {
+		e.Settled = false
+	}
+
 	return true
+}
+
+func (e *ItemEntity) HasMovementUpdate() bool {
+	if e.Settled {
+
+		dx := e.Position.X - e.LastPos.X
+		dy := e.Position.Y - e.LastPos.Y
+		dz := e.Position.Z - e.LastPos.Z
+		return dx*dx+dy*dy+dz*dz > 0.0001
+	}
+
+	return false
 }
 
 func (e *ItemEntity) CanCollideWith(ent *Entity) bool {

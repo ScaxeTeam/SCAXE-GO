@@ -389,29 +389,38 @@ func (p *Player) checkNearEntities() {
 		}
 
 		pk := protocol.NewTakeItemEntityPacket()
-		pk.Target = p.GetID()
 		pk.EntityID = itemEnt.GetID()
-
-		p.SendPacket(pk)
+		pk.Target = p.GetID()
 
 		pkSelf := protocol.NewTakeItemEntityPacket()
-		pkSelf.Target = 0
 		pkSelf.EntityID = itemEnt.GetID()
+		pkSelf.Target = 0
+
+		if p.Human.Level != nil {
+			for _, e := range p.Human.Level.GetEntities() {
+				if viewer, ok := e.(*Player); ok && viewer.Spawned && viewer != p {
+					viewer.SendPacket(pk)
+				}
+			}
+		}
+
 		p.SendPacket(pkSelf)
 
 		p.Inventory.AddItem(it)
 
 		itemEnt.Close()
+		level.RemoveEntity(itemEnt)
 
-		pkRemove := protocol.NewRemoveEntityPacket()
-		pkRemove.EntityID = itemEnt.GetID()
-		p.SendPacket(pkRemove)
+		removePk := protocol.NewRemoveEntityPacket()
+		removePk.EntityID = itemEnt.GetID()
+		for _, viewer := range p.getViewers() {
+			viewer.SendPacket(removePk)
+		}
+		p.SendPacket(removePk)
 
 		p.sendInventoryContents()
 
 		logger.Debug("Picked up item", "player", p.Username, "item", itemEnt.Item.ID)
-
-		level.RemoveEntity(itemEnt)
 	}
 }
 

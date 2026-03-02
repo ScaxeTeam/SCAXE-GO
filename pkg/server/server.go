@@ -463,39 +463,6 @@ func (s *Server) tick() {
 			}
 			s.Level.PendingBlockUpdates = s.Level.PendingBlockUpdates[:0]
 		}
-
-		pk := protocol.NewMoveEntityPacket()
-		for _, e := range s.Level.GetEntities() {
-			hasMove := e.HasMovementUpdate()
-			hasRot := e.HasRotationUpdate()
-			if hasMove || hasRot {
-				pos := e.GetPosition()
-				entry := protocol.MoveEntityEntry{
-					EntityID: e.GetID(),
-					X:        float32(pos.X),
-					Y:        float32(pos.Y + e.GetEyeHeight()),
-					Z:        float32(pos.Z),
-					Yaw:      float32(e.GetYaw()),
-					HeadYaw:  float32(e.GetYaw()),
-					Pitch:    float32(e.GetPitch()),
-				}
-				pk.Entities = append(pk.Entities, entry)
-
-				if s.CurrentTick%100 == 0 {
-					logger.Info("Entity broadcast",
-						"eid", e.GetID(), "hasMove", hasMove, "hasRot", hasRot,
-						"pos", fmt.Sprintf("%.2f,%.2f,%.2f", pos.X, pos.Y, pos.Z),
-						"sendY", fmt.Sprintf("%.2f", pos.Y+e.GetEyeHeight()))
-				}
-			}
-		}
-		if len(pk.Entities) > 0 {
-			for _, p := range s.GetOnlinePlayers() {
-				if p.Spawned {
-					s.sendPacket(p, pk)
-				}
-			}
-		}
 	}
 
 	for _, p := range s.GetOnlinePlayers() {
@@ -514,9 +481,36 @@ func (s *Server) tick() {
 			if p.IsSpawned() {
 				p.Tick(s.CurrentTick)
 				s.checkChunks(p)
-				s.checkNearEntities(p)
 			}
 		}()
+	}
+
+	if s.Level != nil {
+		pk := protocol.NewMoveEntityPacket()
+		for _, e := range s.Level.GetEntities() {
+			hasMove := e.HasMovementUpdate()
+			hasRot := e.HasRotationUpdate()
+			if hasMove || hasRot {
+				pos := e.GetPosition()
+				entry := protocol.MoveEntityEntry{
+					EntityID: e.GetID(),
+					X:        float32(pos.X),
+					Y:        float32(pos.Y + e.GetEyeHeight()),
+					Z:        float32(pos.Z),
+					Yaw:      float32(e.GetYaw()),
+					HeadYaw:  float32(e.GetYaw()),
+					Pitch:    float32(e.GetPitch()),
+				}
+				pk.Entities = append(pk.Entities, entry)
+			}
+		}
+		if len(pk.Entities) > 0 {
+			for _, p := range s.GetOnlinePlayers() {
+				if p.Spawned {
+					s.sendPacket(p, pk)
+				}
+			}
+		}
 	}
 
 	s.mu.Lock()
@@ -1256,7 +1250,7 @@ func (s *Server) handleDropItem(p *player.Player, pkt *protocol.DropItemPacket) 
 	motionZ := float32(z * force)
 
 	dropX := float32(p.Position.X)
-	dropY := float32(p.Position.Y + 1.3)
+	dropY := float32(p.Position.Y - 0.32) // Position.Y is eye-height (feet+1.62), -0.32 = chest level
 	dropZ := float32(p.Position.Z)
 
 	s.dropItemWithMotion(dropX, dropY, dropZ, droppedItem, motionX, motionY, motionZ, 40)
@@ -1586,52 +1580,6 @@ func isDoorBlock(id byte) bool {
 		return true
 	}
 	return false
-}
-func (s *Server) checkNearEntities(p *player.Player) {
-	if !p.IsAlive() || p.Position == nil {
-		return
-	}
-	px, py, pz := p.Position.X, p.Position.Y, p.Position.Z
-	searchBB := &entity.AxisAlignedBB{
-		MinX: px - 1.0,
-		MinY: py - 1.0,
-		MinZ: pz - 1.0,
-		MaxX: px + 1.0,
-		MaxY: py + 2.0,
-		MaxZ: pz + 1.0,
-	}
-
-	for _, e := range s.Level.GetNearbyEntities(searchBB, nil) {
-		itemEnt, ok := e.(*entity.ItemEntity)
-		if !ok || itemEnt.Closed {
-			continue
-		}
-
-		if itemEnt.PickupDelay > 0 {
-			continue
-		}
-
-		it := itemEnt.Item
-		if it.ID == 0 {
-			continue
-		}
-		if p.Gamemode == 0 && !p.Inventory.CanAddItem(it) {
-			continue
-		}
-		takePk := protocol.NewTakeItemEntityPacket()
-		takePk.EntityID = p.GetEntityID()
-		takePk.Target = itemEnt.GetID()
-		s.BroadcastPacket(takePk)
-		if p.Gamemode == 0 {
-			p.Inventory.AddItem(it)
-		}
-		s.syncInventory(p)
-		s.Level.RemoveEntity(itemEnt)
-		itemEnt.Close()
-		removePk := protocol.NewRemoveEntityPacket()
-		removePk.EntityID = itemEnt.GetID()
-		s.BroadcastPacket(removePk)
-	}
 }
 
 func (s *Server) handleMobEquipment(p *player.Player, pkt *protocol.MobEquipmentPacket) {
