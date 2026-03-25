@@ -39,7 +39,7 @@ type Session struct {
 }
 
 func NewSession(server *Server, addr *net.UDPAddr, mtu uint16, clientID uint64) *Session {
-	logger.Debug("raknet.NewSession", "address", addr.String(), "mtu", mtu, "clientID", clientID)
+	logger.DebugRaknet("raknet.NewSession", "address", addr.String(), "mtu", mtu, "clientID", clientID)
 	return &Session{
 		server:          server,
 		addr:            addr,
@@ -63,7 +63,7 @@ func (s *Session) handleDataPacket(data []byte) {
 	s.lastActivity = time.Now()
 
 	seqNum := uint32(data[1]) | uint32(data[2])<<8 | uint32(data[3])<<16
-	logger.Debug("raknet.Session.handleDataPacket", "seqNum", seqNum, "size", len(data))
+	logger.DebugRaknet("raknet.Session.handleDataPacket", "seqNum", seqNum, "size", len(data))
 
 	s.mu.Lock()
 	s.ackQueue = append(s.ackQueue, seqNum)
@@ -155,7 +155,7 @@ func (s *Session) decodeEncapsulated(data []byte, offset int) (*encapsulatedPack
 	copy(pkt.payload, data[offset:offset+length])
 	offset += length
 
-	logger.Debug("raknet.decodeEncapsulated",
+	logger.DebugRaknet("raknet.decodeEncapsulated",
 		"reliability", pkt.reliability,
 		"hasSplit", pkt.hasSplit,
 		"payloadSize", len(pkt.payload))
@@ -179,7 +179,7 @@ func (s *Session) handleEncapsulatedPacket(pkt *encapsulatedPacket) {
 	}
 
 	packetID := pkt.payload[0]
-	logger.Debug("raknet.handleEncapsulatedPacket", "innerPacketID", packetID, "payloadSize", len(pkt.payload))
+	logger.DebugRaknet("raknet.handleEncapsulatedPacket", "innerPacketID", packetID, "payloadSize", len(pkt.payload))
 
 	switch packetID {
 	case IDConnectionRequest:
@@ -205,7 +205,7 @@ func (s *Session) handleEncapsulatedPacket(pkt *encapsulatedPacket) {
 				s.server.OnPacket(s, pkt.payload)
 			}
 		} else {
-			logger.Debug("raknet.handleEncapsulatedPacket", "unhandled", packetID)
+			logger.DebugRaknet("raknet.handleEncapsulatedPacket", "unhandled", packetID)
 		}
 	}
 }
@@ -218,7 +218,7 @@ func (s *Session) handleSplitPacket(pkt *encapsulatedPacket) []byte {
 	splitIndex := pkt.splitIndex
 	splitCount := pkt.splitCount
 
-	logger.Debug("raknet.handleSplitPacket",
+	logger.DebugRaknet("raknet.handleSplitPacket",
 		"splitID", splitID,
 		"splitIndex", splitIndex,
 		"splitCount", splitCount,
@@ -236,7 +236,7 @@ func (s *Session) handleSplitPacket(pkt *encapsulatedPacket) []byte {
 	data.fragments[splitIndex] = pkt.payload
 
 	if uint32(len(data.fragments)) != data.splitCount {
-		logger.Debug("raknet.handleSplitPacket",
+		logger.DebugRaknet("raknet.handleSplitPacket",
 			"status", "waiting for more fragments",
 			"received", len(data.fragments),
 			"total", data.splitCount)
@@ -266,7 +266,7 @@ func (s *Session) handleSplitPacket(pkt *encapsulatedPacket) []byte {
 
 	delete(s.splitPackets, splitID)
 
-	logger.Debug("raknet.handleSplitPacket",
+	logger.DebugRaknet("raknet.handleSplitPacket",
 		"status", "reassembly complete",
 		"totalSize", len(result))
 
@@ -280,7 +280,7 @@ func (s *Session) handleConnectionRequest(data []byte) {
 
 	clientID := binary.BigEndian.Uint64(data[1:9])
 	sendPingTime := binary.BigEndian.Uint64(data[9:17])
-	logger.Debug("raknet.handleConnectionRequest", "clientID", clientID, "pingTime", sendPingTime)
+	logger.DebugRaknet("raknet.handleConnectionRequest", "clientID", clientID, "pingTime", sendPingTime)
 
 	buf := new(bytes.Buffer)
 	buf.WriteByte(IDConnectionRequestAccepted)
@@ -300,11 +300,11 @@ func (s *Session) handleConnectionRequest(data []byte) {
 	binary.Write(buf, binary.BigEndian, uint64(time.Now().UnixMilli()))
 
 	s.sendReliable(buf.Bytes())
-	logger.Debug("raknet.handleConnectionRequest", "sent", "ConnectionRequestAccepted")
+	logger.DebugRaknet("raknet.handleConnectionRequest", "sent", "ConnectionRequestAccepted")
 }
 
 func (s *Session) handleNewIncomingConnection(data []byte) {
-	logger.Debug("raknet.handleNewIncomingConnection", "address", s.addr.String())
+	logger.DebugRaknet("raknet.handleNewIncomingConnection", "address", s.addr.String())
 	s.connected = true
 
 	if s.server.OnConnect != nil {
@@ -314,12 +314,12 @@ func (s *Session) handleNewIncomingConnection(data []byte) {
 
 func (s *Session) handleACK(data []byte) {
 
-	logger.Debug("raknet.Session.handleACK", "size", len(data))
+	logger.DebugRaknet("raknet.Session.handleACK", "size", len(data))
 }
 
 func (s *Session) handleNAK(data []byte) {
 
-	logger.Debug("raknet.Session.handleNAK", "size", len(data))
+	logger.DebugRaknet("raknet.Session.handleNAK", "size", len(data))
 }
 
 func (s *Session) sendACK() {
@@ -365,7 +365,7 @@ func (s *Session) sendReliable(payload []byte) {
 	totalLen := len(payload)
 	splitCount := uint32((totalLen + maxPayloadSize - 1) / maxPayloadSize)
 
-	logger.Debug("raknet.sendReliable", "action", "splitting packet", "totalLen", totalLen, "splitID", splitID, "count", splitCount)
+	logger.DebugRaknet("raknet.sendReliable", "action", "splitting packet", "totalLen", totalLen, "splitID", splitID, "count", splitCount)
 
 	for i := uint32(0); i < splitCount; i++ {
 		start := int(i) * maxPayloadSize

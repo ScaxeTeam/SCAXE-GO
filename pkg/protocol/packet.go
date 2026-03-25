@@ -118,7 +118,7 @@ func (p *BasePacket) ID() byte {
 
 func EncodeHeader(stream *BinaryStream, id byte) {
 	stream.WriteByte(id)
-	logger.Debug("EncodeHeader", "packetID", id)
+	logger.DebugPacket("EncodeHeader", "packetID", id)
 }
 
 func DecodeHeader(stream *BinaryStream, expectedID byte) error {
@@ -129,7 +129,7 @@ func DecodeHeader(stream *BinaryStream, expectedID byte) error {
 	if id != expectedID {
 		logger.Warn("DecodeHeader", "expected", expectedID, "got", id)
 	}
-	logger.Debug("DecodeHeader", "packetID", id)
+	logger.DebugPacket("DecodeHeader", "packetID", id)
 	return nil
 }
 
@@ -137,7 +137,7 @@ var PacketPool = make(map[byte]func() DataPacket)
 
 func RegisterPacket(id byte, constructor func() DataPacket) {
 	PacketPool[id] = constructor
-	logger.Debug("RegisterPacket", "id", id, "hex", fmt.Sprintf("0x%02x", id))
+	logger.DebugPacket("RegisterPacket", "id", id, "hex", fmt.Sprintf("0x%02x", id))
 }
 
 func init() {

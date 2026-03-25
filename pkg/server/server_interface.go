@@ -51,3 +51,20 @@ func (s *Server) GetSeed() int64 {
 	}
 	return 0
 }
+
+func (s *Server) GetWeather() int {
+	if s.Level != nil {
+		return s.Level.GetWeather()
+	}
+	return 0
+}
+
+func (s *Server) SetWeather(w int) {
+	if s.Level == nil {
+		return
+	}
+	s.Level.SetWeather(w)
+	for _, pk := range s.Level.MakeWeatherPackets() {
+		s.BroadcastPacket(pk)
+	}
+}

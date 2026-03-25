@@ -53,13 +53,13 @@ func (p *MobEquipmentPacket) Decode(stream *BinaryStream) error {
 
 	p.EntityID, err = stream.ReadBELong()
 	if err != nil {
-		logger.Debug("MobEquipment: failed to read EntityID", "error", err)
+		logger.DebugPacket("MobEquipment: failed to read EntityID", "error", err)
 		return nil
 	}
 
 	p.ItemID, err = stream.ReadBEShort()
 	if err != nil {
-		logger.Debug("MobEquipment: failed to read ItemID", "error", err)
+		logger.DebugPacket("MobEquipment: failed to read ItemID", "error", err)
 		return nil
 	}
 

@@ -49,7 +49,7 @@ func (c *WeatherCommand) Execute(sender command.CommandSender, args []string) bo
 		return true
 	}
 
-	_ = weather
+	c.server.SetWeather(weather)
 	c.server.BroadcastMessage("§eWeather has been changed")
 
 	return true

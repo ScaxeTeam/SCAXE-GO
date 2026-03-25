@@ -57,6 +57,11 @@ type Level struct {
 
 	Closed bool
 
+	Raining    bool
+	RainTime   int
+	Thundering bool
+	ThunderTime int
+
 	tickState *TickState
 	Tiles     *tile.TileManager
 
@@ -561,6 +566,8 @@ func (l *Level) Tick() {
 
 	l.tickChunks()
 
+	l.TickWeather()
+
 	l.Tiles.TickUpdates()
 }
 
@@ -625,7 +632,7 @@ func (l *Level) Save() {
 		}
 	}
 	if savedCount > 0 {
-		logger.Debug("Level saved", "name", l.Name, "chunks", savedCount)
+		logger.DebugLevel("Level saved", "name", l.Name, "chunks", savedCount)
 	}
 }
 
@@ -760,7 +767,7 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 
 		t := tile.CreateTile(tileID, chunk, tileNBT)
 		if t == nil {
-			logger.Debug("Unknown tile entity type, skipping", "id", tileID,
+			logger.DebugLevel("Unknown tile entity type, skipping", "id", tileID,
 				"x", tileNBT.GetInt("x"), "y", tileNBT.GetInt("y"), "z", tileNBT.GetInt("z"))
 			continue
 		}
@@ -774,7 +781,7 @@ func (l *Level) loadTilesFromChunk(chunk *world.Chunk) {
 	}
 
 	if loaded > 0 {
-		logger.Debug("Loaded tile entities from chunk",
+		logger.DebugLevel("Loaded tile entities from chunk",
 			"cx", chunk.X, "cz", chunk.Z, "count", loaded)
 	}
 }

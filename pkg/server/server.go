@@ -958,6 +958,10 @@ func (s *Server) tryFirstSpawn(p *player.Player) {
 	s.BroadcastPacket(joinMsg)
 
 	s.syncInventory(p)
+
+	for _, wpk := range s.Level.MakeWeatherPackets() {
+		s.sendPacket(p, wpk)
+	}
 }
 
 func (s *Server) checkChunks(p *player.Player) {

@@ -30,7 +30,7 @@ func (p *Player) handleBlockPlace(lvl *level.Level, x, y, z int32, face int, fx,
 	distSq := dx*dx + dy*dy + dz*dz
 
 	if distSq > 169 {
-		logger.Debug("Block place too far",
+		logger.DebugPlayer("Block place too far",
 			"player", p.Username,
 			"distSq", distSq)
 		return
@@ -85,7 +85,7 @@ func (p *Player) handleBlockPlace(lvl *level.Level, x, y, z int32, face int, fx,
 				p.Inventory.SetItemInHand(heldItem)
 			}
 
-			logger.Debug("Block placed",
+			logger.DebugPlayer("Block placed",
 				"player", p.Username,
 				"x", targetX, "y", targetY, "z", targetZ,
 				"id", heldItem.ID, "meta", heldItem.Meta)
@@ -139,7 +139,7 @@ func (p *Player) HandleRemoveBlock(x, y, z int32) {
 			}
 		}
 
-		logger.Debug("Block broken",
+		logger.DebugPlayer("Block broken",
 			"player", p.Username,
 			"x", x, "y", y, "z", z,
 			"id", bs.ID, "meta", bs.Meta)
@@ -152,38 +152,38 @@ func (p *Player) HandlePlayerAction(action int32, x, y, z int32, face int) {
 
 	switch action {
 	case ActionStartBreak:
-		logger.Debug("Start break",
+		logger.DebugPlayer("Start break",
 			"player", p.Username,
 			"x", x, "y", y, "z", z)
 
 	case ActionAbortBreak:
-		logger.Debug("Abort break", "player", p.Username)
+		logger.DebugPlayer("Abort break", "player", p.Username)
 
 	case ActionStopBreak:
 
 	case ActionReleaseItem:
-		logger.Debug("Release item", "player", p.Username)
+		logger.DebugPlayer("Release item", "player", p.Username)
 
 	case ActionJump:
 
 	case ActionStartSprint:
 		p.Human.SetSprinting(true)
-		logger.Debug("Start sprint", "player", p.Username)
+		logger.DebugPlayer("Start sprint", "player", p.Username)
 
 	case ActionStopSprint:
 		p.Human.SetSprinting(false)
-		logger.Debug("Stop sprint", "player", p.Username)
+		logger.DebugPlayer("Stop sprint", "player", p.Username)
 
 	case ActionStartSneak:
 		p.Human.Metadata.SetFlag(1, 1, true)
-		logger.Debug("Start sneak", "player", p.Username)
+		logger.DebugPlayer("Start sneak", "player", p.Username)
 
 	case ActionStopSneak:
 		p.Human.Metadata.SetFlag(1, 1, false)
-		logger.Debug("Stop sneak", "player", p.Username)
+		logger.DebugPlayer("Stop sneak", "player", p.Username)
 
 	case ActionRespawn:
-		logger.Debug("Respawn", "player", p.Username)
+		logger.DebugPlayer("Respawn", "player", p.Username)
 	}
 }
 func (p *Player) canInteract(x, y, z float64, maxDistance float64) bool {
@@ -247,7 +247,7 @@ func (p *Player) handleItemUse() {
 	if heldItem.ID == 0 {
 		return
 	}
-	logger.Debug("Item use (air)",
+	logger.DebugPlayer("Item use (air)",
 		"player", p.Username,
 		"itemID", heldItem.ID)
 }

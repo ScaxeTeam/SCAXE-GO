@@ -44,11 +44,11 @@ func (p *AddPlayerPacket) Encode(stream *BinaryStream) error {
 
 	if len(p.RawUUID) == 16 {
 		stream.WriteBytes(p.RawUUID)
-		logger.Debug("AddPlayerPacket Encode", "RawUUID", fmt.Sprintf("%x", p.RawUUID))
+		logger.DebugPacket("AddPlayerPacket Encode", "RawUUID", fmt.Sprintf("%x", p.RawUUID))
 	} else {
 		rawUUID := parseUUIDToBytes(p.UUID)
 		stream.WriteBytes(rawUUID)
-		logger.Debug("AddPlayerPacket Encode", "UUID", p.UUID, "Raw", fmt.Sprintf("%x", rawUUID))
+		logger.DebugPacket("AddPlayerPacket Encode", "UUID", p.UUID, "Raw", fmt.Sprintf("%x", rawUUID))
 	}
 
 	stream.WriteString16(p.Username)

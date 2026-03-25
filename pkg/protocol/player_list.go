@@ -48,7 +48,7 @@ func (p *PlayerListPacket) Encode(stream *BinaryStream) error {
 	for _, entry := range p.Entries {
 
 		rawUUID := parseUUIDToBytes(entry.UUID)
-		logger.Debug("PlayerListPacket Encode", "UUID", entry.UUID, "Raw", fmt.Sprintf("%x", rawUUID), "Type", p.Type)
+		logger.DebugPacket("PlayerListPacket Encode", "UUID", entry.UUID, "Raw", fmt.Sprintf("%x", rawUUID), "Type", p.Type)
 		stream.WriteBytes(rawUUID)
 
 		if p.Type == PlayerListTypeAdd {

@@ -35,7 +35,7 @@ func (p *TextPacket) Name() string {
 
 func (p *TextPacket) Encode(stream *BinaryStream) error {
 	EncodeHeader(stream, p.ID())
-	logger.Debug("TextPacket.Encode", "type", p.TextType, "source", p.SourceName, "message", p.Message)
+	logger.DebugPacket("TextPacket.Encode", "type", p.TextType, "source", p.SourceName, "message", p.Message)
 
 	stream.WriteByte(p.TextType)
 

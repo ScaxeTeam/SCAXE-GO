@@ -21,7 +21,7 @@ func (p *ChunkRadiusUpdatedPacket) Name() string {
 
 func (p *ChunkRadiusUpdatedPacket) Encode(stream *BinaryStream) error {
 	EncodeHeader(stream, p.ID())
-	logger.Debug("ChunkRadiusUpdatedPacket.Encode", "radius", p.Radius)
+	logger.DebugPacket("ChunkRadiusUpdatedPacket.Encode", "radius", p.Radius)
 	stream.WriteInt(p.Radius)
 	return nil
 }
@@ -33,7 +33,7 @@ func (p *ChunkRadiusUpdatedPacket) Decode(stream *BinaryStream) error {
 		logger.Error("ChunkRadiusUpdatedPacket.Decode", "error", err)
 		return err
 	}
-	logger.Debug("ChunkRadiusUpdatedPacket.Decode", "radius", p.Radius)
+	logger.DebugPacket("ChunkRadiusUpdatedPacket.Decode", "radius", p.Radius)
 	return nil
 }
 

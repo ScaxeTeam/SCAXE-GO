@@ -45,7 +45,7 @@ func (p *ContainerSetContentPacket) Encode(stream *BinaryStream) error {
 		stream.WriteShort(0)
 	}
 
-	logger.Debug("ContainerSetContent",
+	logger.DebugPacket("ContainerSetContent",
 		"windowID", p.WindowID,
 		"itemCount", len(p.Items),
 		"hotbarCount", len(p.HotbarTypes),

@@ -35,6 +35,11 @@ type ServerConfig struct {
 
 	DebugMode       bool
 	DebugItemPickup bool
+	DebugRaknet     bool
+	DebugPacket     bool
+	DebugLevel      bool
+	DebugEntity     bool
+	DebugPlayer     bool
 
 	Properties map[string]string
 }
@@ -62,6 +67,11 @@ func DefaultConfig() *ServerConfig {
 		TickRate:        20,
 		DebugMode:       false,
 		DebugItemPickup: false,
+		DebugRaknet:     false,
+		DebugPacket:     false,
+		DebugLevel:      false,
+		DebugEntity:     false,
+		DebugPlayer:     false,
 		Properties:      make(map[string]string),
 	}
 }
@@ -177,6 +187,16 @@ func Load(path string) (*ServerConfig, error) {
 		case "debug-item-pickup":
 			cfg.DebugItemPickup = parseBool(value)
 			logger.Debug("Config.Load", "key", key, "value", cfg.DebugItemPickup)
+		case "debug-raknet":
+			cfg.DebugRaknet = parseBool(value)
+		case "debug-packet":
+			cfg.DebugPacket = parseBool(value)
+		case "debug-level":
+			cfg.DebugLevel = parseBool(value)
+		case "debug-entity":
+			cfg.DebugEntity = parseBool(value)
+		case "debug-player":
+			cfg.DebugPlayer = parseBool(value)
 		}
 	}
 
@@ -227,6 +247,11 @@ func (c *ServerConfig) Save(path string) error {
 		fmt.Sprintf("view-distance=%d", c.ViewDistance),
 		fmt.Sprintf("debug=%t", c.DebugMode),
 		fmt.Sprintf("debug-item-pickup=%t", c.DebugItemPickup),
+		fmt.Sprintf("debug-raknet=%t", c.DebugRaknet),
+		fmt.Sprintf("debug-packet=%t", c.DebugPacket),
+		fmt.Sprintf("debug-level=%t", c.DebugLevel),
+		fmt.Sprintf("debug-entity=%t", c.DebugEntity),
+		fmt.Sprintf("debug-player=%t", c.DebugPlayer),
 	}
 
 	for _, line := range lines {

@@ -49,7 +49,7 @@ func (s *Server) registerConsoleCommands() {
 	s.CommandMap.Register(defaults.NewMeCommand(s))
 	s.CommandMap.Register(defaults.NewSeedCommand(s))
 	s.CommandMap.Register(defaults.NewTpsCommand(s))
-	s.CommandMap.Register(defaults.NewPingCommand())
+	s.CommandMap.Register(defaults.NewPingCommand(s))
 
 	s.CommandMap.Register(defaults.NewBanCommand(s))
 	s.CommandMap.Register(defaults.NewPardonCommand(s))

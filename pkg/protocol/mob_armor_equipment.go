@@ -75,7 +75,7 @@ func (p *MobArmorEquipmentPacket) Decode(stream *BinaryStream) error {
 	var err error
 	p.EntityID, err = stream.ReadBELong()
 	if err != nil {
-		logger.Debug("MobArmorEquipment: failed to read EntityID", "error", err)
+		logger.DebugPacket("MobArmorEquipment: failed to read EntityID", "error", err)
 		return nil
 	}
 	for i := 0; i < 4; i++ {

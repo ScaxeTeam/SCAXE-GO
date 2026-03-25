@@ -60,7 +60,7 @@ type Server struct {
 }
 
 func NewServer(address string) *Server {
-	logger.Debug("raknet.NewServer", "address", address)
+	logger.DebugRaknet("raknet.NewServer", "address", address)
 	return &Server{
 		address:  address,
 		serverID: rand.Int63(),
@@ -75,11 +75,11 @@ func (s *Server) ServerID() int64 {
 
 func (s *Server) SetPongData(data []byte) {
 	s.pongData = data
-	logger.Debug("raknet.SetPongData", "size", len(data))
+	logger.DebugRaknet("raknet.SetPongData", "size", len(data))
 }
 
 func (s *Server) Start() error {
-	logger.Debug("raknet.Server.Start", "address", s.address)
+	logger.DebugRaknet("raknet.Server.Start", "address", s.address)
 
 	addr, err := net.ResolveUDPAddr("udp", s.address)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() {
-	logger.Debug("raknet.Server.Stop", "action", "stopping")
+	logger.DebugRaknet("raknet.Server.Stop", "action", "stopping")
 	s.running = false
 	close(s.stopCh)
 	if s.conn != nil {
@@ -147,7 +147,7 @@ func (s *Server) handlePacket(addr *net.UDPAddr, data []byte) {
 	packetID := data[0]
 	addrStr := addr.String()
 
-	logger.Debug("raknet.handlePacket", "from", addrStr, "packetID", fmt.Sprintf("0x%02x", packetID), "size", len(data))
+	logger.DebugRaknet("raknet.handlePacket", "from", addrStr, "packetID", fmt.Sprintf("0x%02x", packetID), "size", len(data))
 
 	switch packetID {
 	case IDUnconnectedPing, IDUnconnectedPingOpenConn:
@@ -202,6 +202,10 @@ func (s *Server) handlePacket(addr *net.UDPAddr, data []byte) {
 		return
 	}
 
+	if packetID == 0x0d || packetID == 0x0e {
+		return
+	}
+
 	logger.Warn("raknet.handlePacket", "warning", "unhandled packet", "id", fmt.Sprintf("0x%02x", packetID))
 }
 
@@ -211,7 +215,7 @@ func (s *Server) handleUnconnectedPing(addr *net.UDPAddr, data []byte) {
 	}
 
 	pingTime := binary.BigEndian.Uint64(data[1:9])
-	logger.Debug("raknet.handleUnconnectedPing", "from", addr.String(), "pingTime", pingTime)
+	logger.DebugRaknet("raknet.handleUnconnectedPing", "from", addr.String(), "pingTime", pingTime)
 
 	buf := new(bytes.Buffer)
 	buf.WriteByte(IDUnconnectedPong)
@@ -223,7 +227,7 @@ func (s *Server) handleUnconnectedPing(addr *net.UDPAddr, data []byte) {
 	buf.Write(s.pongData)
 
 	s.conn.WriteToUDP(buf.Bytes(), addr)
-	logger.Debug("raknet.handleUnconnectedPing", "sent", "pong", "size", buf.Len())
+	logger.DebugRaknet("raknet.handleUnconnectedPing", "sent", "pong", "size", buf.Len())
 }
 
 func (s *Server) handleOpenConnectionRequest1(addr *net.UDPAddr, data []byte) {
@@ -237,7 +241,7 @@ func (s *Server) handleOpenConnectionRequest1(addr *net.UDPAddr, data []byte) {
 	}
 
 	protocolVersion := data[17]
-	logger.Debug("raknet.handleOpenConnectionRequest1", "from", addr.String(), "protocolVersion", protocolVersion)
+	logger.DebugRaknet("raknet.handleOpenConnectionRequest1", "from", addr.String(), "protocolVersion", protocolVersion)
 
 	supported := false
 	for _, p := range SupportedProtocols {
@@ -269,7 +273,7 @@ func (s *Server) handleOpenConnectionRequest1(addr *net.UDPAddr, data []byte) {
 	binary.Write(buf, binary.BigEndian, uint16(mtuSize))
 
 	s.conn.WriteToUDP(buf.Bytes(), addr)
-	logger.Debug("raknet.handleOpenConnectionRequest1", "sent", "reply1", "mtu", mtuSize)
+	logger.DebugRaknet("raknet.handleOpenConnectionRequest1", "sent", "reply1", "mtu", mtuSize)
 }
 
 func (s *Server) handleOpenConnectionRequest2(addr *net.UDPAddr, data []byte) {
@@ -279,7 +283,7 @@ func (s *Server) handleOpenConnectionRequest2(addr *net.UDPAddr, data []byte) {
 		return
 	}
 
-	logger.Debug("raknet.handleOpenConnectionRequest2", "rawDataSize", len(data))
+	logger.DebugRaknet("raknet.handleOpenConnectionRequest2", "rawDataSize", len(data))
 
 	if !bytes.Equal(data[1:17], RakNetMagic) {
 		logger.Warn("raknet.handleOpenConnectionRequest2", "warning", "invalid magic")
@@ -316,7 +320,7 @@ func (s *Server) handleOpenConnectionRequest2(addr *net.UDPAddr, data []byte) {
 	}
 	clientGuid := binary.BigEndian.Uint64(data[offset : offset+8])
 
-	logger.Debug("raknet.handleOpenConnectionRequest2", "from", addr.String(), "mtu", mtu, "clientGuid", clientGuid)
+	logger.DebugRaknet("raknet.handleOpenConnectionRequest2", "from", addr.String(), "mtu", mtu, "clientGuid", clientGuid)
 
 	session := NewSession(s, addr, mtu, clientGuid)
 
@@ -349,7 +353,7 @@ func (s *Server) removeSession(addrStr string) {
 	if exists && s.OnDisconnect != nil {
 		s.OnDisconnect(session)
 	}
-	logger.Debug("raknet.removeSession", "address", addrStr)
+	logger.DebugRaknet("raknet.removeSession", "address", addrStr)
 }
 
 func (s *Server) SendTo(addr *net.UDPAddr, data []byte) error {

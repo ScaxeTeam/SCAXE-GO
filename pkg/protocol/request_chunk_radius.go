@@ -32,7 +32,7 @@ func (p *RequestChunkRadiusPacket) Decode(stream *BinaryStream) error {
 		logger.Error("RequestChunkRadiusPacket.Decode", "error", err)
 		return err
 	}
-	logger.Debug("RequestChunkRadiusPacket.Decode", "radius", p.Radius)
+	logger.DebugPacket("RequestChunkRadiusPacket.Decode", "radius", p.Radius)
 	return nil
 }
 

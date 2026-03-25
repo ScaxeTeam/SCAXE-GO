@@ -107,7 +107,7 @@ func NewPlayer(session *raknet.Session, ip string, port int) *Player {
 
 		pk := protocol.NewContainerSetSlotPacket(0, uint16(slot), it)
 		p.SendPacket(pk)
-		logger.Debug("SyncInventory", "slot", slot, "item", it.ID, "count", it.Count)
+		logger.DebugPlayer("SyncInventory", "slot", slot, "item", it.ID, "count", it.Count)
 
 		heldIndex := p.Inventory.GetHeldItemIndex()
 		if slot == heldIndex {
@@ -120,7 +120,7 @@ func NewPlayer(session *raknet.Session, ip string, port int) *Player {
 			mobPk.SelectedSlot = uint8(heldIndex)
 
 			p.SendPacket(mobPk)
-			logger.Debug("SyncHand", "eid", 0, "slot", slot, "item", it.ID)
+			logger.DebugPlayer("SyncHand", "eid", 0, "slot", slot, "item", it.ID)
 		}
 	}
 
@@ -420,7 +420,7 @@ func (p *Player) checkNearEntities() {
 
 		p.sendInventoryContents()
 
-		logger.Debug("Picked up item", "player", p.Username, "item", itemEnt.Item.ID)
+		logger.DebugPlayer("Picked up item", "player", p.Username, "item", itemEnt.Item.ID)
 	}
 }
 

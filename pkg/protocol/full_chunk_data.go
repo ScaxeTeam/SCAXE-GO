@@ -31,7 +31,7 @@ func (p *FullChunkDataPacket) Name() string {
 
 func (p *FullChunkDataPacket) Encode(stream *BinaryStream) error {
 	EncodeHeader(stream, p.ID())
-	logger.Debug("FullChunkDataPacket.Encode", "x", p.ChunkX, "z", p.ChunkZ, "order", p.Order, "len", len(p.Data))
+	logger.DebugPacket("FullChunkDataPacket.Encode", "x", p.ChunkX, "z", p.ChunkZ, "order", p.Order, "len", len(p.Data))
 	stream.WriteInt(p.ChunkX)
 	stream.WriteInt(p.ChunkZ)
 	stream.WriteByte(p.Order)

@@ -58,7 +58,7 @@ func (p *Player) handleEntityAttack(target entity.IEntity) {
 	}
 	p.combat.CPS++
 	if p.combat.CPS > p.combat.MaxCPS {
-		logger.Debug("CPS exceeded", "player", p.Username, "cps", p.combat.CPS)
+		logger.DebugPlayer("CPS exceeded", "player", p.Username, "cps", p.combat.CPS)
 		return
 	}
 	if p.combat.AttackCooldown > 0 {
@@ -105,7 +105,7 @@ func (p *Player) handleEntityAttack(target entity.IEntity) {
 	if p.IsSurvival() {
 	}
 
-	logger.Debug("Entity attacked",
+	logger.DebugPlayer("Entity attacked",
 		"player", p.Username,
 		"target", target.GetID(),
 		"damage", damageBase,
@@ -116,14 +116,14 @@ func (p *Player) handleEntityRightClick(target entity.IEntity) {
 		return
 	}
 
-	logger.Debug("Entity right-click",
+	logger.DebugPlayer("Entity right-click",
 		"player", p.Username,
 		"target", target.GetID())
 }
 func (p *Player) handleLeaveVehicle(target entity.IEntity) {
 	p.Human.Metadata.SetFlag(entity.DataFlags, entity.DataFlagRiding, false)
 
-	logger.Debug("Left vehicle",
+	logger.DebugPlayer("Left vehicle",
 		"player", p.Username,
 		"target", target.GetID())
 }

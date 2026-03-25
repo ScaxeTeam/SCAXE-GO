@@ -30,7 +30,7 @@ func (p *PlayStatusPacket) Name() string {
 
 func (p *PlayStatusPacket) Encode(stream *BinaryStream) error {
 	EncodeHeader(stream, p.ID())
-	logger.Debug("PlayStatusPacket.Encode", "status", p.Status)
+	logger.DebugPacket("PlayStatusPacket.Encode", "status", p.Status)
 	stream.WriteInt(p.Status)
 	return nil
 }
@@ -42,7 +42,7 @@ func (p *PlayStatusPacket) Decode(stream *BinaryStream) error {
 		logger.Error("PlayStatusPacket.Decode", "error", err)
 		return err
 	}
-	logger.Debug("PlayStatusPacket.Decode", "status", p.Status)
+	logger.DebugPacket("PlayStatusPacket.Decode", "status", p.Status)
 	return nil
 }
 

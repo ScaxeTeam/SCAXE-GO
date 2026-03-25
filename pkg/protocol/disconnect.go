@@ -21,7 +21,7 @@ func (p *DisconnectPacket) Name() string {
 }
 
 func (p *DisconnectPacket) Encode(stream *BinaryStream) error {
-	logger.Debug("DisconnectPacket.Encode", "message", p.Message, "hideScreen", p.HideDisconnectionScreen)
+	logger.DebugPacket("DisconnectPacket.Encode", "message", p.Message, "hideScreen", p.HideDisconnectionScreen)
 	EncodeHeader(stream, p.ID())
 	stream.WriteBool(p.HideDisconnectionScreen)
 	if !p.HideDisconnectionScreen {
@@ -45,7 +45,7 @@ func (p *DisconnectPacket) Decode(stream *BinaryStream) error {
 			return err
 		}
 	}
-	logger.Debug("DisconnectPacket.Decode", "message", p.Message)
+	logger.DebugPacket("DisconnectPacket.Decode", "message", p.Message)
 	return nil
 }
 

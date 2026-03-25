@@ -73,6 +73,22 @@ func main() {
 		logger.SetPacketLogging(true)
 	}
 
+	if cfg.DebugRaknet {
+		logger.SetDebugRaknet(true)
+	}
+	if cfg.DebugPacket {
+		logger.SetDebugPacket(true)
+	}
+	if cfg.DebugLevel {
+		logger.SetDebugLevel(true)
+	}
+	if cfg.DebugEntity {
+		logger.SetDebugEntity(true)
+	}
+	if cfg.DebugPlayer {
+		logger.SetDebugPlayer(true)
+	}
+
 	logger.Server("Configuration loaded",
 		"serverName", cfg.ServerName,
 		"maxPlayers", cfg.MaxPlayers,

@@ -43,6 +43,12 @@ var (
 	colorEnabled  bool = true
 	initialized   bool = false
 	ansiRegex          = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+	debugRaknet bool = false
+	debugPacket bool = false
+	debugLevel  bool = false
+	debugEntity bool = false
+	debugPlayer bool = false
 )
 
 func Init(out io.Writer, debug bool) {
@@ -51,6 +57,14 @@ func Init(out io.Writer, debug bool) {
 
 	output = out
 	debugEnabled = debug
+
+	if debug {
+		debugRaknet = true
+		debugPacket = true
+		debugLevel = true
+		debugEntity = true
+		debugPlayer = true
+	}
 
 	if runtime.GOOS == "windows" {
 		enableWindowsVT()
@@ -83,7 +97,20 @@ func SetDebug(enabled bool) {
 	mu.Lock()
 	defer mu.Unlock()
 	debugEnabled = enabled
+	if enabled {
+		debugRaknet = true
+		debugPacket = true
+		debugLevel = true
+		debugEntity = true
+		debugPlayer = true
+	}
 }
+
+func SetDebugRaknet(v bool)  { mu.Lock(); debugRaknet = v; mu.Unlock() }
+func SetDebugPacket(v bool)  { mu.Lock(); debugPacket = v; mu.Unlock() }
+func SetDebugLevel(v bool)   { mu.Lock(); debugLevel = v; mu.Unlock() }
+func SetDebugEntity(v bool)  { mu.Lock(); debugEntity = v; mu.Unlock() }
+func SetDebugPlayer(v bool)  { mu.Lock(); debugPlayer = v; mu.Unlock() }
 
 func SetPacketLogging(enabled bool) {
 	mu.Lock()
@@ -225,6 +252,46 @@ func Debug(msg string, args ...any) {
 		return
 	}
 	text := formatLog(CategoryDebug, colorGray, msg, args...)
+	write(text)
+}
+
+func DebugRaknet(msg string, args ...any) {
+	if !debugRaknet {
+		return
+	}
+	text := formatLog("RAKNET", colorGray, msg, args...)
+	write(text)
+}
+
+func DebugPacket(msg string, args ...any) {
+	if !debugPacket {
+		return
+	}
+	text := formatLog("PACKET", colorGray, msg, args...)
+	write(text)
+}
+
+func DebugLevel(msg string, args ...any) {
+	if !debugLevel {
+		return
+	}
+	text := formatLog("LEVEL", colorGray, msg, args...)
+	write(text)
+}
+
+func DebugEntity(msg string, args ...any) {
+	if !debugEntity {
+		return
+	}
+	text := formatLog("ENTITY", colorGray, msg, args...)
+	write(text)
+}
+
+func DebugPlayer(msg string, args ...any) {
+	if !debugPlayer {
+		return
+	}
+	text := formatLog("PLAYER-DBG", colorGray, msg, args...)
 	write(text)
 }
 

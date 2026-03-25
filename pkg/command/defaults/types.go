@@ -39,6 +39,9 @@ type ServerInterface interface {
 
 	SetPlayerGamemode(playerName string, gamemode int)
 
+	SetWeather(weather int)
+	GetWeather() int
+
 	GetLevelManager() LevelManager
 }
 

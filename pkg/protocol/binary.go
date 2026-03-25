@@ -17,7 +17,7 @@ type BinaryStream struct {
 }
 
 func NewBinaryStream() *BinaryStream {
-	logger.Debug("NewBinaryStream", "action", "create empty stream")
+	logger.DebugPacket("NewBinaryStream", "action", "create empty stream")
 	return &BinaryStream{
 		buf:    new(bytes.Buffer),
 		offset: 0,
@@ -25,7 +25,7 @@ func NewBinaryStream() *BinaryStream {
 }
 
 func NewBinaryStreamFromBytes(data []byte) *BinaryStream {
-	logger.Debug("NewBinaryStreamFromBytes", "size", len(data))
+	logger.DebugPacket("NewBinaryStreamFromBytes", "size", len(data))
 	return &BinaryStream{
 		buf:    bytes.NewBuffer(data),
 		offset: 0,
@@ -65,7 +65,7 @@ func (b *BinaryStream) ReadBool() (bool, error) {
 		return false, err
 	}
 	result := val != 0x00
-	logger.Debug("BinaryStream.ReadBool", "value", result, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadBool", "value", result, "offset", b.offset)
 	return result, nil
 }
 
@@ -89,7 +89,7 @@ func (b *BinaryStream) ReadShort() (int16, error) {
 		return 0, err
 	}
 	val := int16(binary.BigEndian.Uint16(data))
-	logger.Debug("BinaryStream.ReadShort", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadShort", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -99,7 +99,7 @@ func (b *BinaryStream) ReadLShort() (int16, error) {
 		return 0, err
 	}
 	val := int16(binary.LittleEndian.Uint16(data))
-	logger.Debug("BinaryStream.ReadLShort", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLShort", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -109,7 +109,7 @@ func (b *BinaryStream) ReadInt() (int32, error) {
 		return 0, err
 	}
 	val := int32(binary.BigEndian.Uint32(data))
-	logger.Debug("BinaryStream.ReadInt", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadInt", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -119,7 +119,7 @@ func (b *BinaryStream) ReadLInt() (int32, error) {
 		return 0, err
 	}
 	val := int32(binary.LittleEndian.Uint32(data))
-	logger.Debug("BinaryStream.ReadLInt", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLInt", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -129,7 +129,7 @@ func (b *BinaryStream) ReadLong() (int64, error) {
 		return 0, err
 	}
 	val := int64(binary.BigEndian.Uint64(data))
-	logger.Debug("BinaryStream.ReadLong", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLong", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -139,7 +139,7 @@ func (b *BinaryStream) ReadLLong() (int64, error) {
 		return 0, err
 	}
 	val := int64(binary.LittleEndian.Uint64(data))
-	logger.Debug("BinaryStream.ReadLLong", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLLong", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -150,7 +150,7 @@ func (b *BinaryStream) ReadFloat() (float32, error) {
 	}
 	bits := binary.BigEndian.Uint32(data)
 	val := math.Float32frombits(bits)
-	logger.Debug("BinaryStream.ReadFloat", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadFloat", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -161,7 +161,7 @@ func (b *BinaryStream) ReadLFloat() (float32, error) {
 	}
 	bits := binary.LittleEndian.Uint32(data)
 	val := math.Float32frombits(bits)
-	logger.Debug("BinaryStream.ReadLFloat", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLFloat", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -172,7 +172,7 @@ func (b *BinaryStream) ReadDouble() (float64, error) {
 	}
 	bits := binary.BigEndian.Uint64(data)
 	val := math.Float64frombits(bits)
-	logger.Debug("BinaryStream.ReadDouble", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadDouble", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -183,7 +183,7 @@ func (b *BinaryStream) ReadLDouble() (float64, error) {
 	}
 	bits := binary.LittleEndian.Uint64(data)
 	val := math.Float64frombits(bits)
-	logger.Debug("BinaryStream.ReadLDouble", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadLDouble", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -194,7 +194,7 @@ func (b *BinaryStream) ReadVarInt() (int32, error) {
 	}
 
 	val := int32((raw >> 1) ^ -(raw & 1))
-	logger.Debug("BinaryStream.ReadVarInt", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadVarInt", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -207,7 +207,7 @@ func (b *BinaryStream) ReadUnsignedVarInt() (uint32, error) {
 		}
 		val |= uint32(byteVal&0x7F) << (i * 7)
 		if (byteVal & 0x80) == 0 {
-			logger.Debug("BinaryStream.ReadUnsignedVarInt", "value", val, "bytes", i+1)
+			logger.DebugPacket("BinaryStream.ReadUnsignedVarInt", "value", val, "bytes", i+1)
 			return val, nil
 		}
 	}
@@ -221,7 +221,7 @@ func (b *BinaryStream) ReadVarLong() (int64, error) {
 	}
 
 	val := int64((raw >> 1) ^ -(raw & 1))
-	logger.Debug("BinaryStream.ReadVarLong", "value", val, "offset", b.offset)
+	logger.DebugPacket("BinaryStream.ReadVarLong", "value", val, "offset", b.offset)
 	return val, nil
 }
 
@@ -234,7 +234,7 @@ func (b *BinaryStream) ReadUnsignedVarLong() (uint64, error) {
 		}
 		val |= uint64(byteVal&0x7F) << (i * 7)
 		if (byteVal & 0x80) == 0 {
-			logger.Debug("BinaryStream.ReadUnsignedVarLong", "value", val, "bytes", i+1)
+			logger.DebugPacket("BinaryStream.ReadUnsignedVarLong", "value", val, "bytes", i+1)
 			return val, nil
 		}
 	}
@@ -254,7 +254,7 @@ func (b *BinaryStream) ReadString() (string, error) {
 		return "", err
 	}
 	val := string(data)
-	logger.Debug("BinaryStream.ReadString", "length", length, "value", val)
+	logger.DebugPacket("BinaryStream.ReadString", "length", length, "value", val)
 	return val, nil
 }
 
@@ -264,14 +264,14 @@ func (b *BinaryStream) ReadRemaining() ([]byte, error) {
 		return nil, err
 	}
 	b.offset += len(data)
-	logger.Debug("BinaryStream.ReadRemaining", "size", len(data))
+	logger.DebugPacket("BinaryStream.ReadRemaining", "size", len(data))
 	return data, nil
 }
 
 func (b *BinaryStream) WriteByte(val byte) error {
 	b.buf.WriteByte(val)
 	b.offset++
-	logger.Debug("BinaryStream.WriteByte", "value", val)
+	logger.DebugPacket("BinaryStream.WriteByte", "value", val)
 	return nil
 }
 
@@ -281,7 +281,7 @@ func (b *BinaryStream) WriteBool(val bool) {
 	} else {
 		b.WriteByte(0x00)
 	}
-	logger.Debug("BinaryStream.WriteBool", "value", val)
+	logger.DebugPacket("BinaryStream.WriteBool", "value", val)
 }
 
 func (b *BinaryStream) WriteBytes(data []byte) {
@@ -293,42 +293,42 @@ func (b *BinaryStream) WriteShort(val int16) {
 	data := make([]byte, 2)
 	binary.BigEndian.PutUint16(data, uint16(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteShort", "value", val)
+	logger.DebugPacket("BinaryStream.WriteShort", "value", val)
 }
 
 func (b *BinaryStream) WriteLShort(val int16) {
 	data := make([]byte, 2)
 	binary.LittleEndian.PutUint16(data, uint16(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLShort", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLShort", "value", val)
 }
 
 func (b *BinaryStream) WriteInt(val int32) {
 	data := make([]byte, 4)
 	binary.BigEndian.PutUint32(data, uint32(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteInt", "value", val)
+	logger.DebugPacket("BinaryStream.WriteInt", "value", val)
 }
 
 func (b *BinaryStream) WriteLInt(val int32) {
 	data := make([]byte, 4)
 	binary.LittleEndian.PutUint32(data, uint32(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLInt", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLInt", "value", val)
 }
 
 func (b *BinaryStream) WriteLong(val int64) {
 	data := make([]byte, 8)
 	binary.BigEndian.PutUint64(data, uint64(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLong", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLong", "value", val)
 }
 
 func (b *BinaryStream) WriteLLong(val int64) {
 	data := make([]byte, 8)
 	binary.LittleEndian.PutUint64(data, uint64(val))
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLLong", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLLong", "value", val)
 }
 
 func (b *BinaryStream) WriteFloat(val float32) {
@@ -336,7 +336,7 @@ func (b *BinaryStream) WriteFloat(val float32) {
 	data := make([]byte, 4)
 	binary.BigEndian.PutUint32(data, bits)
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteFloat", "value", val)
+	logger.DebugPacket("BinaryStream.WriteFloat", "value", val)
 }
 
 func (b *BinaryStream) WriteLFloat(val float32) {
@@ -344,7 +344,7 @@ func (b *BinaryStream) WriteLFloat(val float32) {
 	data := make([]byte, 4)
 	binary.LittleEndian.PutUint32(data, bits)
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLFloat", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLFloat", "value", val)
 }
 
 func (b *BinaryStream) WriteDouble(val float64) {
@@ -352,7 +352,7 @@ func (b *BinaryStream) WriteDouble(val float64) {
 	data := make([]byte, 8)
 	binary.BigEndian.PutUint64(data, bits)
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteDouble", "value", val)
+	logger.DebugPacket("BinaryStream.WriteDouble", "value", val)
 }
 
 func (b *BinaryStream) WriteLDouble(val float64) {
@@ -360,14 +360,14 @@ func (b *BinaryStream) WriteLDouble(val float64) {
 	data := make([]byte, 8)
 	binary.LittleEndian.PutUint64(data, bits)
 	b.WriteBytes(data)
-	logger.Debug("BinaryStream.WriteLDouble", "value", val)
+	logger.DebugPacket("BinaryStream.WriteLDouble", "value", val)
 }
 
 func (b *BinaryStream) WriteVarInt(val int32) {
 
 	encoded := uint32((val << 1) ^ (val >> 31))
 	b.WriteUnsignedVarInt(encoded)
-	logger.Debug("BinaryStream.WriteVarInt", "value", val)
+	logger.DebugPacket("BinaryStream.WriteVarInt", "value", val)
 }
 
 func (b *BinaryStream) WriteUnsignedVarInt(val uint32) {
@@ -385,7 +385,7 @@ func (b *BinaryStream) WriteVarLong(val int64) {
 
 	encoded := uint64((val << 1) ^ (val >> 63))
 	b.WriteUnsignedVarLong(encoded)
-	logger.Debug("BinaryStream.WriteVarLong", "value", val)
+	logger.DebugPacket("BinaryStream.WriteVarLong", "value", val)
 }
 
 func (b *BinaryStream) WriteUnsignedVarLong(val uint64) {
@@ -402,7 +402,7 @@ func (b *BinaryStream) WriteUnsignedVarLong(val uint64) {
 func (b *BinaryStream) WriteString(val string) {
 	b.WriteUnsignedVarInt(uint32(len(val)))
 	b.WriteBytes([]byte(val))
-	logger.Debug("BinaryStream.WriteString", "length", len(val), "value", val)
+	logger.DebugPacket("BinaryStream.WriteString", "length", len(val), "value", val)
 }
 
 func (b *BinaryStream) ReadString16() (string, error) {
@@ -418,14 +418,14 @@ func (b *BinaryStream) ReadString16() (string, error) {
 		return "", err
 	}
 	val := string(data)
-	logger.Debug("BinaryStream.ReadString16", "length", length, "value", val)
+	logger.DebugPacket("BinaryStream.ReadString16", "length", length, "value", val)
 	return val, nil
 }
 
 func (b *BinaryStream) WriteString16(val string) {
 	b.WriteShort(int16(len(val)))
 	b.WriteBytes([]byte(val))
-	logger.Debug("BinaryStream.WriteString16", "length", len(val), "value", val)
+	logger.DebugPacket("BinaryStream.WriteString16", "length", len(val), "value", val)
 }
 
 func (b *BinaryStream) ReadEntityID() (int64, error) {

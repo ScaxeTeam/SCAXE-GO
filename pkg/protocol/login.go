@@ -35,7 +35,7 @@ func (p *LoginPacket) Name() string {
 }
 
 func (p *LoginPacket) Encode(stream *BinaryStream) error {
-	logger.Debug("LoginPacket.Encode", "username", p.Username, "protocol", p.Protocol)
+	logger.DebugPacket("LoginPacket.Encode", "username", p.Username, "protocol", p.Protocol)
 	EncodeHeader(stream, p.ID())
 	stream.WriteString16(p.Username)
 	stream.WriteInt(p.Protocol)
@@ -55,7 +55,7 @@ func (p *LoginPacket) Encode(stream *BinaryStream) error {
 }
 
 func (p *LoginPacket) Decode(stream *BinaryStream) error {
-	logger.Debug("LoginPacket.Decode", "start", true, "len", stream.Len())
+	logger.DebugPacket("LoginPacket.Decode", "start", true, "len", stream.Len())
 
 	var err error
 
@@ -64,28 +64,28 @@ func (p *LoginPacket) Decode(stream *BinaryStream) error {
 		logger.Error("LoginPacket.Decode", "error", "failed to read username", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "username", p.Username)
+	logger.DebugPacket("LoginPacket.Decode", "username", p.Username)
 
 	p.Protocol, err = stream.ReadInt()
 	if err != nil {
 		logger.Error("LoginPacket.Decode", "error", "failed to read protocol1", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "protocol1", p.Protocol)
+	logger.DebugPacket("LoginPacket.Decode", "protocol1", p.Protocol)
 
 	protocol2, err := stream.ReadInt()
 	if err != nil {
 		logger.Error("LoginPacket.Decode", "error", "failed to read protocol2", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "protocol2", protocol2)
+	logger.DebugPacket("LoginPacket.Decode", "protocol2", protocol2)
 
 	p.ClientID, err = stream.ReadLong()
 	if err != nil {
 		logger.Error("LoginPacket.Decode", "error", "failed to read clientId", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "clientId", p.ClientID)
+	logger.DebugPacket("LoginPacket.Decode", "clientId", p.ClientID)
 
 	uuidBytes, err := stream.ReadBytes(16)
 	if err != nil {
@@ -93,14 +93,14 @@ func (p *LoginPacket) Decode(stream *BinaryStream) error {
 		return err
 	}
 	p.ClientUUID = formatUUID(uuidBytes)
-	logger.Debug("LoginPacket.Decode", "uuid", p.ClientUUID)
+	logger.DebugPacket("LoginPacket.Decode", "uuid", p.ClientUUID)
 
 	p.ServerAddress, err = stream.ReadString16()
 	if err != nil {
 		logger.Error("LoginPacket.Decode", "error", "failed to read serverAddress", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "serverAddress", p.ServerAddress)
+	logger.DebugPacket("LoginPacket.Decode", "serverAddress", p.ServerAddress)
 
 	clientSecret, err := stream.ReadString16()
 	if err != nil {
@@ -108,14 +108,14 @@ func (p *LoginPacket) Decode(stream *BinaryStream) error {
 		logger.Error("LoginPacket.Decode", "error", "failed to read clientSecret", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "clientSecret", clientSecret)
+	logger.DebugPacket("LoginPacket.Decode", "clientSecret", clientSecret)
 
 	p.SkinID, err = stream.ReadString16()
 	if err != nil {
 		logger.Error("LoginPacket.Decode", "error", "failed to read skinName", "err", err)
 		return err
 	}
-	logger.Debug("LoginPacket.Decode", "skinName", p.SkinID)
+	logger.DebugPacket("LoginPacket.Decode", "skinName", p.SkinID)
 
 	skinData, err := stream.ReadString16()
 	if err != nil {
@@ -124,7 +124,7 @@ func (p *LoginPacket) Decode(stream *BinaryStream) error {
 		return err
 	}
 	p.SkinData = []byte(skinData)
-	logger.Debug("LoginPacket.Decode", "skinDataLen", len(p.SkinData))
+	logger.DebugPacket("LoginPacket.Decode", "skinDataLen", len(p.SkinData))
 
 	logger.Info("LoginPacket.Decode", "success", true, "username", p.Username, "protocol", p.Protocol, "uuid", p.ClientUUID)
 	return nil
@@ -144,7 +144,7 @@ func formatUUID(data []byte) string {
 }
 
 func (p *LoginPacket) parseChainData() {
-	logger.Debug("LoginPacket.parseChainData", "chainLength", len(p.ChainData))
+	logger.DebugPacket("LoginPacket.parseChainData", "chainLength", len(p.ChainData))
 
 	var chainWrapper struct {
 		Chain []string `json:"chain"`
@@ -170,11 +170,11 @@ func (p *LoginPacket) parseChainData() {
 		if extraData, ok := claims["extraData"].(map[string]interface{}); ok {
 			if displayName, ok := extraData["displayName"].(string); ok {
 				p.Username = displayName
-				logger.Debug("LoginPacket.parseChainData", "foundUsername", displayName)
+				logger.DebugPacket("LoginPacket.parseChainData", "foundUsername", displayName)
 			}
 			if identity, ok := extraData["identity"].(string); ok {
 				p.ClientUUID = identity
-				logger.Debug("LoginPacket.parseChainData", "foundUUID", identity)
+				logger.DebugPacket("LoginPacket.parseChainData", "foundUUID", identity)
 			}
 		}
 	}
@@ -196,27 +196,27 @@ func (p *LoginPacket) parseClientData() {
 
 	if skinID, ok := claims["SkinId"].(string); ok {
 		p.SkinID = skinID
-		logger.Debug("LoginPacket.parseClientData", "skinID", skinID)
+		logger.DebugPacket("LoginPacket.parseClientData", "skinID", skinID)
 	}
 
 	if serverAddr, ok := claims["ServerAddress"].(string); ok {
 		p.ServerAddress = serverAddr
-		logger.Debug("LoginPacket.parseClientData", "serverAddress", serverAddr)
+		logger.DebugPacket("LoginPacket.parseClientData", "serverAddress", serverAddr)
 	}
 
 	if langCode, ok := claims["LanguageCode"].(string); ok {
 		p.LanguageCode = langCode
-		logger.Debug("LoginPacket.parseClientData", "languageCode", langCode)
+		logger.DebugPacket("LoginPacket.parseClientData", "languageCode", langCode)
 	}
 
 	if deviceOS, ok := claims["DeviceOS"].(float64); ok {
 		p.DeviceOS = int32(deviceOS)
-		logger.Debug("LoginPacket.parseClientData", "deviceOS", p.DeviceOS)
+		logger.DebugPacket("LoginPacket.parseClientData", "deviceOS", p.DeviceOS)
 	}
 
 	if deviceModel, ok := claims["DeviceModel"].(string); ok {
 		p.DeviceModel = deviceModel
-		logger.Debug("LoginPacket.parseClientData", "deviceModel", deviceModel)
+		logger.DebugPacket("LoginPacket.parseClientData", "deviceModel", deviceModel)
 	}
 }
 

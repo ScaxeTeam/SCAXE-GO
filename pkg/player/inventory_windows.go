@@ -89,7 +89,7 @@ func (p *Player) OpenInventory(inv inventory.Inventory) bool {
 	}
 
 	windowID := p.AddWindow(inv)
-	logger.Debug("OpenInventory",
+	logger.DebugPlayer("OpenInventory",
 		"player", p.Username,
 		"windowID", windowID,
 		"type", inv.GetType().GetDefaultTitle())
@@ -110,7 +110,7 @@ func (p *Player) CloseInventory() {
 		return
 	}
 
-	logger.Debug("CloseInventory",
+	logger.DebugPlayer("CloseInventory",
 		"player", p.Username,
 		"type", current.GetType().GetDefaultTitle())
 
